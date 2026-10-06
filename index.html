@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>夜市吃貨小精靈 - 台灣美食探險</title>
+    <style>
+        :root {
+            --neon-pink: #ff2a6d;
+            --neon-blue: #05d9e8;
+            --neon-yellow: #ffc400;
+            --neon-green: #00ff66;
+            --bg-color: #111111;
+            --text-color: #ffffff;
+            --game-size: min(92vw, calc(100vh - 110px));
+        }
+        
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html, body {
+            background-color: #111111 !important;
+            color: #ffffff !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        button, input, select {
+            touch-action: manipulation !important;
+            cursor: pointer;
+            font-family: inherit;
+            pointer-events: auto !important;
+            user-select: auto !important;
+            -webkit-user-select: auto !important;
+        }
+
+        /* HUD 狀態列 */
+        #hud {
+            width: var(--game-size);
+            display: flex;
+            justify-content: space-between;
+            padding: clamp(6px, 1.2vh, 12px) clamp(10px, 1.8vw, 20px);
+            background: rgba(0,0,0,0.9) !important;
+            border: 2px solid var(--neon-blue);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            box-shadow: 0 0 10px var(--neon-blue);
+            font-weight: bold;
+            font-size: clamp(14px, 2vmin, 20px);
+        }
+        
+        .hud-item { display: flex; align-items: center; }
+        #lives { color: var(--neon-pink); letter-spacing: 2px; }
+
+        /* 遊戲畫布容器 */
+        #game-container {
+            position: relative;
+            box-shadow: 0 0 25px var(--neon-pink);
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #000000 !important;
+            width: var(--game-size);
+            height: var(--game-size);
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            touch-action: none;
+            background-color: #050505;
+        }
+
+        .hidden { 
+            display: none !important; 
+            pointer-events: none !important;
+        }
+
+        /* 介面彈窗遮罩 */
+        .modal {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(17, 17, 17, 0.96) !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(10px, 2.5vmin, 20px);
+            text-align: center;
+            z-index: 30;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            pointer-events: auto;
+        }
+
+        .modal h1 {
+            color: var(--neon-yellow) !important;
+            text-shadow: 0 0 12px var(--neon-yellow);
+            margin-bottom: clamp(8px, 1.8vmin, 16px);
+            font-size: clamp(20px, 4vmin, 32px);
+        }
+        .modal h2 {
+            color: var(--neon-yellow) !important;
+            font-size: clamp(16px, 2.8vmin, 22px);
+            margin-bottom: 6px;
+        }
+        .modal p { 
+            color: #ffffff !important;
+            margin-bottom: 8px; 
+            line-height: 1.4; 
+            font-size: clamp(13px, 2vmin, 17px); 
+        }
+
+        /* 霓虹按鈕 */
+        .btn {
+            background: #111111;
+            color: var(--neon-blue);
+            border: 2px solid var(--neon-blue);
+            padding: clamp(8px, 1.4vmin, 12px) clamp(16px, 2.8vmin, 28px);
+            font-size: clamp(13px, 2vmin, 17px);
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 4px;
+            box-shadow: 0 0 5px var(--neon-blue) inset, 0 0 5px var(--neon-blue);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:active {
+            background: var(--neon-blue) !important;
+            color: #000000 !important;
+        }
+        .btn-green {
+            color: var(--neon-green) !important;
+            border-color: var(--neon-green) !important;
+            box-shadow: 0 0 5px var(--neon-green) inset, 0 0 5px var(--neon-green);
+        }
+        .btn-green:active {
+            background: var(--neon-green) !important;
+            color: #000000 !important;
+        }
+        .btn-danger {
+            color: var(--neon-pink) !important;
+            border-color: var(--neon-pink) !important;
+            box-shadow: 0 0 5px var(--neon-pink) inset, 0 0 5px var(--neon-pink);
+        }
+        .btn-danger:active {
+            background: var(--neon-pink) !important;
+            color: #ffffff !important;
+        }
+
+        #player-name-input {
+            padding: clamp(8px, 1.5vmin, 14px);
+            font-size: clamp(15px, 2.5vmin, 20px);
+            border-radius: 6px;
+            border: 2px solid var(--neon-pink);
+            background: #222222;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: clamp(10px, 2vmin, 18px);
+            width: 75%;
+            max-width: 300px;
+        }
+
+        /* 題目圖片（上傳圖片時顯示） */
+        #quiz-q-img {
+            max-height: clamp(90px, 22vmin, 160px);
+            max-width: min(85%, 260px);
+            width: auto;
+            object-fit: contain;
+            margin: 6px auto 10px;
+            border-radius: 8px;
+            border: 2px solid var(--neon-blue);
+            background: rgba(0,0,0,0.6);
+            padding: 4px;
+            box-shadow: 0 0 12px var(--neon-blue);
+            display: block;
+        }
+
+        /* 選項按鈕區 */
+        .quiz-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            width: 95%;
+            max-width: 440px;
+            gap: clamp(6px, 1.2vmin, 10px);
+        }
+        @media (max-width: 380px) {
+            .quiz-options { grid-template-columns: 1fr; }
+        }
+        .quiz-btn {
+            border-color: var(--neon-pink);
+            color: #ffffff;
+            box-shadow: 0 0 5px var(--neon-pink) inset;
+            padding: clamp(8px, 1.2vmin, 12px) clamp(8px, 1vmin, 12px);
+            font-size: clamp(13px, 1.9vmin, 16px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-align: center;
+            min-height: 50px;
+        }
+        .quiz-btn:active {
+            background: rgba(255, 42, 109, 0.4) !important;
+            border-color: var(--neon-yellow) !important;
+        }
+        .quiz-opt-text {
+            width: 100%;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.25;
+            font-weight: bold;
+        }
+        .quiz-opt-img {
+            width: clamp(48px, 9vmin, 68px);
+            height: clamp(48px, 9vmin, 68px);
+            border-radius: 6px;
+            object-fit: cover;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 0 6px rgba(0,0,0,0.6);
+            flex-shrink: 0;
+        }
+
+        /* 題庫編輯器樣式 */
+        #editor-screen {
+            justify-content: flex-start;
+            text-align: left;
+            padding: 12px;
+        }
+        .editor-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--neon-blue);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        .settings-bar {
+            width: 100%;
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px solid var(--neon-blue);
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 13px;
+        }
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .setting-item label {
+            color: var(--neon-yellow);
+            font-weight: bold;
+        }
+        .editor-select {
+            background: #222222;
+            color: #ffffff;
+            border: 1px solid #666666;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .editor-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            max-height: calc(var(--game-size) - 190px);
+            padding-right: 4px;
+        }
+        .quiz-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .quiz-card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: var(--neon-yellow);
+            font-weight: bold;
+        }
+        .editor-input {
+            width: 100%;
+            background: #222222;
+            border: 1px solid #555555;
+            color: #ffffff;
+            padding: 6px 8px;
+            font-size: 13px;
+            border-radius: 4px;
+            outline: none;
+        }
+        .opt-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+        .opt-preview {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            border: 1px solid #666666;
+            object-fit: contain;
+            background: #111111;
+            flex-shrink: 0;
+        }
+        .upload-btn-label {
+            background: #333333;
+            color: var(--neon-blue);
+            border: 1px solid var(--neon-blue);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .upload-btn-label:hover, .upload-btn-label:active {
+            background: var(--neon-blue);
+            color: #000000;
+        }
+
+        /* 虛擬方向鍵 */
+        #d-pad {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+            width: 150px;
+            height: 150px;
+            touch-action: none;
+        }
+        .d-btn {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid var(--neon-yellow);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--neon-yellow);
+            touch-action: none;
+        }
+        .d-btn:active { background: rgba(255, 196, 0, 0.5); }
+        #btn-up { grid-column: 2; grid-row: 1; }
+        #btn-left { grid-column: 1; grid-row: 2; }
+        #btn-right { grid-column: 3; grid-row: 2; }
+        #btn-down { grid-column: 2; grid-row: 3; }
+
+        @media (hover: none) and (pointer: coarse), (max-width: 900px) {
+            :root {
+                --game-size: min(92vw, calc(100vh - 240px));
+            }
+            #d-pad { display: grid; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="hud">
+        <div class="hud-item">👤 <span id="display-name">玩家</span></div>
+        <div class="hud-item">🏆 分數: <span id="score">0</span></div>
+        <div class="hud-item" id="lives">❤️❤️❤️</div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="380" height="380"></canvas>
+
+        <!-- 1. 開場主畫面 -->
+        <div id="start-screen" class="modal">
+            <h1>夜市吃貨小精靈</h1>
+            <p>台味吊嘎小哥 vs 熱情夜市老伯！<br>吃各類「特色台灣湯品」觸發美食問答！</p>
+            <input type="text" id="player-name-input" value="吃貨小精靈" placeholder="請輸入暱稱" maxlength="8">
+            <div style="display: flex; flex-direction: column; width: 75%; max-width: 280px; gap: 8px;">
+                <button class="btn btn-green" id="start-btn" type="button">開始營業 / 出發！</button>
+                <button class="btn" id="btn-open-editor" type="button">⚙️ 難度與題庫管理</button>
+            </div>
+            <p style="font-size:clamp(11px, 1.8vmin, 14px); margin-top:12px; color:#aaaaaa;">(支援觸控滑動 / 虛擬按鍵 / 鍵盤)</p>
+        </div>
+
+        <!-- 2. 遊戲設定與題庫編輯頁面 -->
+        <div id="editor-screen" class="modal hidden">
+            <div class="editor-header">
+                <span style="font-size: 15px; font-weight: bold; color: var(--neon-yellow);">⚙️ 遊戲難度與題庫設定</span>
+                <div>
+                    <button class="btn btn-green" id="btn-save-quiz" type="button" style="padding: 6px 12px; font-size: 12px;">💾 儲存</button>
+                    <button class="btn" id="btn-cancel-quiz" type="button" style="padding: 6px 12px; font-size: 12px;">✖ 關閉</button>
+                </div>
+            </div>
+
+            <div class="settings-bar">
+                <div class="setting-item">
+                    <label for="select-map">🗺️ 迷宮難度：</label>
+                    <select id="select-map" class="editor-select">
+                        <option value="easy">🟢 綠島夜市 (簡單)</option>
+                        <option value="normal">🟡 通化夜市 (普通)</option>
+                        <option value="hard">🔴 九份老街 (困難)</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="select-ghosts">👴 老闆數量：</label>
+                    <select id="select-ghosts" class="editor-select">
+                        <option value="1">1 位 (悠閒)</option>
+                        <option value="2">2 位 (標準)</option>
+                        <option value="3">3 位 (熱鬧)</option>
+                        <option value="4">4 位 (尖峰暴走!)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="font-size: 12px; color: #bbbbbb; margin-bottom: 6px;">
+                💡 <b>提示</b>：地圖上有 <span id="current-quiz-count" style="color:var(--neon-yellow); font-weight:bold;">4</span> 碗湯，分別對應下面 4 道題目！可點擊 <b>[📂 選圖]</b> 自由新增題目或選項照片。
+            </div>
+
+            <div class="editor-list" id="editor-list"></div>
+            <div style="margin-top: 8px; display: flex; gap: 8px; width: 100%; justify-content: space-between;">
+                <button class="btn" id="btn-add-quiz" type="button" style="font-size: 12px; flex: 1;">➕ 新增一道題目</button>
+                <button class="btn btn-danger" id="btn-reset-default" type="button" style="font-size: 12px;">🔄 恢復指定 4 題</button>
+            </div>
+        </div>
+
+        <!-- 3. 美食問答畫面 -->
+        <div id="quiz-screen" class="modal hidden">
+            <h2 id="quiz-title">🍲 能量大爆發！</h2>
+            <p id="quiz-question" style="font-weight: bold; color: var(--neon-blue); font-size: clamp(14px, 2.3vmin, 18px); margin: 4px 0 6px;">題目載入中...</p>
+            <img id="quiz-q-img" class="hidden" alt="題目圖片" />
+            
+            <div class="quiz-options" id="quiz-options"></div>
+            <div id="quiz-feedback" style="margin-top:8px; font-weight:bold; font-size:clamp(12px, 1.8vmin, 15px); line-height: 1.4; min-height: 32px;"></div>
+            <button class="btn hidden" id="quiz-continue-btn" type="button">立即返回遊戲</button>
+        </div>
+
+        <!-- 4. 結束/通關畫面 -->
+        <div id="game-over-screen" class="modal hidden">
+            <h1 id="end-title">Game Over</h1>
+            <p id="end-message">肚子撐破啦！被熱情老伯抓到了！</p>
+            <p>最終得分: <span id="final-score" style="color:var(--neon-yellow); font-size:clamp(22px, 4vmin, 32px);">0</span></p>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn btn-green" id="restart-btn" type="button">重新挑戰</button>
+                <button class="btn" id="menu-btn" type="button">🏠 返回主畫面</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 虛擬方向鍵 -->
+    <div id="d-pad">
+        <div class="d-btn" id="btn-up">▲</div>
+        <div class="d-btn" id="btn-left">◀</div>
+        <div class="d-btn" id="btn-right">▶</div>
+        <div class="d-btn" id="btn-down">▼</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const CELL_SIZE = 20;
+        const ROWS = 19;
+        const COLS = 19;
+        
+        const DIR = { STOP: 0, RIGHT: 1, LEFT: 2, UP: 3, DOWN: 4 };
+
+        let gameState = 'START'; 
+        let score = 0;
+        let lives = 3;
+        let playerName = "";
+        let animationId = null;
+        let quizTimer = null;
+        let frameCount = 0;
+        let powerModeTime = 0;
+
+        // ================= 預設 4 道題目（純文字，保留圖片擴充支援） =================
+        const DEFAULT_QUIZ_BANK = [
+            { 
+                q: "湯的意思是", 
+                qImg: "",
+                options: [
+                    { text: "1. 熱水", img: "" },
+                    { text: "2. 冷水", img: "" },
+                    { text: "3. 冰塊", img: "" },
+                    { text: "4. 碗", img: "" }
+                ], 
+                ans: 0 
+            },
+            { 
+                q: "紅豆湯喝起來是", 
+                qImg: "",
+                options: [
+                    { text: "1. 甜的", img: "" },
+                    { text: "2. 鹹的", img: "" },
+                    { text: "3. 苦的", img: "" },
+                    { text: "4. 辣的", img: "" }
+                ], 
+                ans: 0 
+            },
+            { 
+                q: "臺灣酥皮濃湯的濃湯通常是", 
+                qImg: "",
+                options: [
+                    { text: "1. 牛奶", img: "" },
+                    { text: "2. 紅豆湯", img: "" },
+                    { text: "3. 玉米濃湯", img: "" },
+                    { text: "4. 四神湯", img: "" }
+                ], 
+                ans: 2 
+            },
+            { 
+                q: "蘿蔔排骨湯喝起來是", 
+                qImg: "",
+                options: [
+                    { text: "1. 甜的", img: "" },
+                    { text: "2. 鹹的", img: "" },
+                    { text: "3. 苦的", img: "" },
+                    { text: "4. 辣的", img: "" }
+                ], 
+                ans: 1 
+            }
+        ];
+
+        const MAP_TEMPLATES = {
+            easy: [
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                [1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,1],
+                [1,2,1,1,1,2,1,1,2,1,2,1,1,2,1,1,1,2,1],
+                [1,2,1,1,1,2,1,1,2,1,2,1,1,2,1,1,1,2,1],
+                [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+                [1,2,1,1,2,1,2,1,1,1,1,1,2,1,2,1,1,2,1],
+                [1,2,2,2,2,1,2,2,2,1,2,2,2,1,2,2,2,2,1],
+                [1,1,1,1,2,1,1,1,0,0,0,1,1,1,2,1,1,1,1],
+                [0,0,0,1,2,1,0,0,0,0,0,0,0,1,2,1,0,0,0],
+                [0,0,0,1,2,0,0,1,0,0,0,1,0,0,2,1,0,0,0],
+                [1,1,1,1,2,1,0,1,1,1,1,1,0,1,2,1,1,1,1],
+                [1,2,2,2,2,1,0,0,0,0,0,0,0,1,2,2,2,2,1],
+                [1,2,1,1,2,1,2,1,1,1,1,1,2,1,2,1,1,2,1],
+                [1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,1],
+                [1,2,1,1,1,2,1,1,2,1,2,1,1,2,1,1,1,2,1],
+                [1,2,2,2,1,2,2,2,2,0,2,2,2,2,1,2,2,2,1],
+                [1,1,1,2,1,2,1,1,1,1,1,1,1,2,1,2,1,1,1],
+                [1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,1],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            ],
+            normal: [
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                [1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,1],
+                [1,2,1,1,2,1,1,1,2,1,2,1,1,1,2,1,1,2,1],
+                [1,2,1,1,2,1,1,1,2,1,2,1,1,1,2,1,1,2,1],
+                [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+                [1,2,1,1,2,1,2,1,1,1,1,1,2,1,2,1,1,2,1],
+                [1,2,2,2,2,1,2,2,2,1,2,2,2,1,2,2,2,2,1],
+                [1,1,1,1,2,1,1,1,0,0,0,1,1,1,2,1,1,1,1],
+                [1,1,1,1,2,1,0,0,0,0,0,0,0,1,2,1,1,1,1],
+                [0,0,0,0,2,0,0,1,0,0,0,1,0,0,2,0,0,0,0],
+                [1,1,1,1,2,1,0,1,1,1,1,1,0,1,2,1,1,1,1],
+                [1,1,1,1,2,1,0,0,0,0,0,0,0,1,2,1,1,1,1],
+                [1,1,1,1,2,1,2,1,1,1,1,1,2,1,2,1,1,1,1],
+                [1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,1],
+                [1,2,1,1,2,1,1,1,2,1,2,1,1,1,2,1,1,2,1],
+                [1,2,2,1,2,2,2,2,2,0,2,2,2,2,2,1,2,2,1],
+                [1,1,2,1,2,1,2,1,1,1,1,1,2,1,2,1,2,1,1],
+                [1,2,2,2,2,1,2,2,2,1,2,2,2,1,2,2,2,2,1],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            ],
+            hard: [
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                [1,2,2,2,1,2,2,2,2,1,2,2,2,2,1,2,2,2,1],
+                [1,2,1,2,1,2,1,1,2,1,2,1,1,2,1,2,1,2,1],
+                [1,2,1,2,2,2,2,1,2,2,2,1,2,2,2,2,1,2,1],
+                [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+                [1,2,2,2,2,1,2,2,2,1,2,2,2,1,2,2,2,2,1],
+                [1,1,1,2,1,1,1,1,0,0,0,1,1,1,1,2,1,1,1],
+                [0,0,1,2,1,0,0,0,0,0,0,0,0,0,1,2,1,0,0],
+                [1,1,1,2,1,0,1,1,0,0,0,1,1,0,1,2,1,1,1],
+                [0,0,0,2,0,0,1,0,0,0,0,0,1,0,0,2,0,0,0],
+                [1,1,1,2,1,0,1,1,1,1,1,1,1,0,1,2,1,1,1],
+                [1,2,2,2,1,0,0,0,0,0,0,0,0,0,1,2,2,2,1],
+                [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+                [1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,1],
+                [1,2,1,2,1,1,1,1,2,1,2,1,1,1,1,2,1,2,1],
+                [1,2,1,2,2,2,1,2,2,0,2,2,1,2,2,2,1,2,1],
+                [1,2,1,1,1,2,1,2,1,1,1,2,1,2,1,1,1,2,1],
+                [1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,1],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            ]
+        };
+
+        function safeGetStorage(key, defaultVal) {
+            try {
+                if (typeof window !== 'undefined' && window.localStorage) {
+                    const val = window.localStorage.getItem(key);
+                    return val !== null ? val : defaultVal;
+                }
+            } catch (e) {}
+            return defaultVal;
+        }
+
+        function safeSetStorage(key, val) {
+            try {
+                if (typeof window !== 'undefined' && window.localStorage) {
+                    window.localStorage.setItem(key, val);
+                }
+            } catch (e) {}
+        }
+
+        const STORAGE_KEY_QUIZ = 'NM_PACMAN_STABLE_V1';
+        const STORAGE_KEY_MAP = 'NM_MAP_STABLE_V1';
+        const STORAGE_KEY_GHOSTS = 'NM_GHOSTS_STABLE_V1';
+
+        function loadSavedSettings() {
+            let q = null;
+            try {
+                const raw = safeGetStorage(STORAGE_KEY_QUIZ, null);
+                if (raw) q = JSON.parse(raw);
+            } catch (e) {}
+            return {
+                quizBank: (q && q.length > 0) ? q : JSON.parse(JSON.stringify(DEFAULT_QUIZ_BANK)),
+                mapType: safeGetStorage(STORAGE_KEY_MAP, 'normal'),
+                ghostCount: parseInt(safeGetStorage(STORAGE_KEY_GHOSTS, '2'), 10) || 2
+            };
+        }
+
+        const currentSettings = loadSavedSettings();
+        let quizBank = currentSettings.quizBank;
+        let selectedMapType = currentSettings.mapType;
+        let ghostCount = currentSettings.ghostCount;
+        let editingQuizBank = [];
+        let currentQuiz = null;
+        let map = [];
+        
+        let soupQuestionMap = {};
+        let soupTypeMap = {};
+
+        const SOUP_ROSTER = [
+            '貢丸湯',
+            '紅豆湯',
+            '花生湯',
+            '酥皮濃湯',
+            '蘿蔔排骨湯',
+            '香菇雞湯',
+            '四神湯'
+        ];
+
+        function processImageFile(file, callback) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvasTmp = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    const maxDim = 260;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                        else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                    }
+                    canvasTmp.width = w;
+                    canvasTmp.height = h;
+                    const cTmp = canvasTmp.getContext('2d');
+                    cTmp.drawImage(img, 0, 0, w, h);
+                    callback(canvasTmp.toDataURL('image/jpeg', 0.88));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function buildDynamicMap() {
+            const template = MAP_TEMPLATES[selectedMapType] || MAP_TEMPLATES.normal;
+            let newMap = template.map(row => [...row]);
+            soupQuestionMap = {};
+            soupTypeMap = {};
+
+            let validSpots = [];
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (newMap[r][c] === 2) {
+                        validSpots.push({ r, c });
+                    }
+                }
+            }
+
+            const preferredPoints = [
+                { r: 1, c: 1 }, { r: 1, c: 17 },
+                { r: 14, c: 1 }, { r: 14, c: 17 },
+                { r: 4, c: 9 }, { r: 13, c: 9 },
+                { r: 4, c: 3 }, { r: 4, c: 15 },
+                { r: 11, c: 3 }, { r: 11, c: 15 }
+            ];
+
+            let targetSoupCount = quizBank.length;
+            let chosenSoupSpots = [];
+
+            for (let pt of preferredPoints) {
+                if (chosenSoupSpots.length >= targetSoupCount) break;
+                if (newMap[pt.r] && newMap[pt.r][pt.c] === 2) {
+                    chosenSoupSpots.push(pt);
+                }
+            }
+
+            if (chosenSoupSpots.length < targetSoupCount) {
+                let remainingSpots = validSpots.filter(v => !chosenSoupSpots.some(c => c.r === v.r && c.c === v.c));
+                let needed = targetSoupCount - chosenSoupSpots.length;
+                let step = Math.max(1, Math.floor(remainingSpots.length / needed));
+                for (let i = 0; i < remainingSpots.length && chosenSoupSpots.length < targetSoupCount; i += step) {
+                    chosenSoupSpots.push(remainingSpots[i]);
+                }
+            }
+
+            chosenSoupSpots.forEach((pt, index) => {
+                newMap[pt.r][pt.c] = 3;
+                soupQuestionMap[`${pt.r},${pt.c}`] = index;
+                soupTypeMap[`${pt.r},${pt.c}`] = index % SOUP_ROSTER.length;
+            });
+
+            return newMap;
+        }
+
+        function drawPixelSprite(ctx, spriteMap, palette, scale, ox, oy) {
+            for (let r = 0; r < spriteMap.length; r++) {
+                const line = spriteMap[r];
+                for (let c = 0; c < line.length; c++) {
+                    const ch = line[c];
+                    if (ch !== '.' && palette[ch]) {
+                        ctx.fillStyle = palette[ch];
+                        ctx.fillRect(ox + c * scale, oy + r * scale, scale, scale);
+                    }
+                }
+            }
+        }
+
+        // ================= 7 大台灣特色湯品圖示（已完全消除語法相容問題） =================
+        function drawDiverseSoup(cx, cy, type) {
+            const timeOffset = Math.sin(Date.now() / 150 + type) * 2; 
+            const drawY = cy + timeOffset - 2;
+
+            ctx.save();
+            switch(type % 7) {
+                case 0: // 1. 貢丸湯
+                    ctx.fillStyle = '#00b4d8';
+                    ctx.beginPath(); ctx.arc(cx, drawY + 4, 7, 0, Math.PI); ctx.fill();
+                    ctx.fillStyle = '#ffccd5';
+                    ctx.beginPath(); ctx.arc(cx - 3, drawY, 3.5, 0, Math.PI*2); ctx.arc(cx + 3, drawY - 1, 3.5, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#38b000';
+                    ctx.fillRect(cx - 4, drawY - 3, 2, 2); ctx.fillRect(cx + 2, drawY - 4, 2, 2);
+                    break;
+
+                case 1: // 2. 紅豆湯
+                    ctx.fillStyle = '#3e2723';
+                    ctx.beginPath(); ctx.arc(cx, drawY + 4, 7, 0, Math.PI); ctx.fill();
+                    ctx.fillStyle = '#880e4f';
+                    ctx.beginPath(); ctx.arc(cx, drawY + 3, 6, 0, Math.PI); ctx.fill();
+                    ctx.fillStyle = '#ad1457';
+                    ctx.beginPath();
+                    ctx.arc(cx - 3, drawY + 1, 2, 0, Math.PI*2);
+                    ctx.arc(cx + 3, drawY + 2, 2, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath(); ctx.arc(cx, drawY - 1, 3, 0, Math.PI*2); ctx.fill();
+                    break;
+
+                case 2: // 3. 花生湯
+                    ctx.fillStyle = '#d84315';
+                    ctx.beginPath(); ctx.arc(cx, drawY + 4, 7, 0, Math.PI); ctx.fill();
+                    ctx.fillStyle = '#fff8e1';
+                    ctx.beginPath(); ctx.arc(cx, drawY + 3, 6, 0, Math.PI); ctx.fill();
+                    ctx.fillStyle = '#ffe082';
+                    ctx.beginPath();
+                    ctx.arc(cx - 3, drawY + 1, 2.5, 0, Math.PI*2);
+                    ctx.arc(cx + 2, drawY + 1, 2.2, 0, Math.PI*2);
+                    ctx.fill();
+                    break;
+
+                case 3: // 4. 酥皮濃湯 (以標準 rect + arc 繪製，移除 roundRect 防崩潰)[cite: 2]
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.beginPath(); ctx.arc(cx, drawY + 4, 6, 0, Math.PI); ctx.fill();
+                    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(cx - 6, drawY + 3, 2.5, Math.PI*0.5, Math.PI*1.5); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(cx + 6, drawY + 3, 2.5, -Math.PI*0.5, Math.PI*0.5); ctx.stroke();
+                    // 金黃澎澎酥皮
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fillRect(cx - 8, drawY - 4, 16, 7);
+                    ctx.fillStyle = '#b45309';
+                    ctx.fillRect(cx - 5, drawY - 3, 10, 2);
+                    ctx.fillStyle = '#fffbeb';
+                    ctx.fillRect(cx - 3, drawY - 1, 1.5, 1.5); ctx.fillRect(cx + 2, drawY - 1, 1.5, 1.5);
+                    break;
+
+                case 4: // 5. 蘿蔔排骨湯
+                    ctx.fillStyle = '#00695c';
+                    ctx.beginPath(); ctx.arc(cx, drawY + 4, 7, 0, Math.PI); ctx.fill();
+                    ctx.fillStyle = '#e0f2fe';
+                    ctx.beginPath(); ctx.arc(cx, drawY + 3, 6, 0, Math.PI); ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(cx - 4, drawY, 4, 3);
+                    ctx.fillStyle = '#8d6e63';
+                    ctx.beginPath(); ctx.arc(cx + 2, drawY + 1, 2.5, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#2e7d32';
+                    ctx.fillRect(cx - 1, drawY - 1, 1.5, 1.5);
+                    break;
+
+                case 5: // 6. 香菇雞湯
+                    ctx.fillStyle = '#212121';
+                    ctx.beginPath(); ctx.arc(cx, drawY + 4, 7, 0, Math.PI); ctx.fill();
+                    ctx.fillStyle = '#fbc02d';
+                    ctx.beginPath(); ctx.arc(cx, drawY + 3, 6, 0, Math.PI); ctx.fill();
+                    ctx.fillStyle = '#3e2723';
+                    ctx.beginPath(); ctx.arc(cx - 2, drawY, 3, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#d7ccc8';
+                    ctx.fillRect(cx - 3, drawY - 0.5, 2, 1);
+                    ctx.fillStyle = '#ffecb3';
+                    ctx.beginPath(); ctx.arc(cx + 3, drawY + 1, 2, 0, Math.PI*2); ctx.fill();
+                    break;
+
+                case 6: // 7. 四神湯
+                    ctx.fillStyle = '#90a4ae';
+                    ctx.beginPath(); ctx.arc(cx, drawY + 4, 7, 0, Math.PI); ctx.fill();
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.beginPath(); ctx.arc(cx, drawY + 3, 6, 0, Math.PI); ctx.fill();
+                    ctx.strokeStyle = '#ffab91'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(cx - 2.5, drawY + 1, 2, 0, Math.PI*2); ctx.stroke();
+                    ctx.fillStyle = '#cfd8dc';
+                    ctx.beginPath(); ctx.arc(cx + 2, drawY + 2, 1.5, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#d50000';
+                    ctx.fillRect(cx + 1, drawY - 1, 2, 1.5);
+                    break;
+            }
+            ctx.restore();
+        }
+
+        // ================= 音效系統 =================
+        let audioCtx = null;
+        function initAudio() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!audioCtx && AudioContext) audioCtx = new AudioContext();
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch (e) {}
+        }
+        window.addEventListener('touchstart', initAudio, { once: true, passive: true });
+        window.addEventListener('click', initAudio, { once: true, passive: true });
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+                
+                if (type === 'chomp') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(450, now);
+                    osc.frequency.exponentialRampToValueAtTime(650, now + 0.08);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now); osc.stop(now + 0.08);
+                } else if (type === 'power') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(320, now);
+                    osc.frequency.linearRampToValueAtTime(880, now + 0.25);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now); osc.stop(now + 0.25);
+                } else if (type === 'eatGhost') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(500, now);
+                    osc.frequency.setValueAtTime(1000, now + 0.1);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now); osc.stop(now + 0.2);
+                } else if (type === 'die') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(60, now + 0.4);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now); osc.stop(now + 0.4);
+                }
+            } catch (e) {}
+        }
+
+        function canMove(gx, gy, direction) {
+            let nx = gx;
+            let ny = gy;
+            if (direction === DIR.RIGHT) nx += 1;
+            else if (direction === DIR.LEFT) nx -= 1;
+            else if (direction === DIR.UP) ny -= 1;
+            else if (direction === DIR.DOWN) ny += 1;
+
+            if (ny === 9 && (nx < 0 || nx >= COLS)) return true;
+            if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) return false;
+
+            return map[ny][nx] !== 1;
+        }
+
+        function isOpposite(d1, d2) {
+            return (d1 === DIR.LEFT && d2 === DIR.RIGHT) ||
+                   (d1 === DIR.RIGHT && d2 === DIR.LEFT) ||
+                   (d1 === DIR.UP && d2 === DIR.DOWN) ||
+                   (d1 === DIR.DOWN && d2 === DIR.UP);
+        }
+
+        function drawMap() {
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const tile = map[r][c];
+                    const x = c * CELL_SIZE;
+                    const y = r * CELL_SIZE;
+
+                    if (tile === 1) {
+                        ctx.strokeStyle = (selectedMapType === 'easy') ? '#00e676' : (selectedMapType === 'hard') ? '#ff0055' : '#ff2a6d';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+                    } else if (tile === 2) {
+                        ctx.fillStyle = '#ffc400';
+                        ctx.beginPath();
+                        ctx.arc(x + CELL_SIZE/2, y + CELL_SIZE/2, 2.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (tile === 3) {
+                        const soupType = soupTypeMap[`${r},${c}`] !== undefined ? soupTypeMap[`${r},${c}`] : 0;
+                        drawDiverseSoup(x + CELL_SIZE/2, y + CELL_SIZE/2, soupType);
+                    }
+                }
+            }
+        }
+
+        // ================= 玩家角色類別 =================
+        class Player {
+            constructor(gx, gy) {
+                this.startX = gx;
+                this.startY = gy;
+                this.facingLeft = false;
+                this.reset();
+            }
+            reset() {
+                this.x = this.startX * CELL_SIZE + CELL_SIZE / 2;
+                this.y = this.startY * CELL_SIZE + CELL_SIZE / 2;
+                this.dir = DIR.STOP;
+                this.nextDir = DIR.STOP;
+                this.speed = 2; 
+            }
+            get gridX() { return Math.floor(this.x / CELL_SIZE); }
+            get gridY() { return Math.floor(this.y / CELL_SIZE); }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                if (this.dir === DIR.LEFT) this.facingLeft = true;
+                if (this.dir === DIR.RIGHT) this.facingLeft = false;
+                if (this.facingLeft) ctx.scale(-1, 1);
+
+                const isEatingOpen = (Math.floor(frameCount / 6) % 2 === 0) && (this.dir !== DIR.STOP);
+                const mouthLine = isEatingOpen ? '.S.MM..S....' : '..SMMSS.....'; 
+
+                const sprite = [
+                    '..HHHHH.....',  
+                    '.HHHHHHH....',  
+                    '.HHSSSSH....',  
+                    '..SE.SS.....',  
+                    '..SSSSSS....',  
+                    mouthLine,       
+                    '.SWWWWS.....',  
+                    '.SWWWWS.....',  
+                    '..BBBB......',  
+                    '..SS.SS.....',  
+                    '..BW.BW.....',  
+                    '............'
+                ];
+
+                const palette = {
+                    'H': '#1c1c1c', 'S': '#ffcd94', 'E': '#000000',
+                    'M': '#d32f2f', 'W': '#ffffff', 'B': '#1565c0'
+                };
+
+                const scale = 1.35;
+                const ox = - (12 * scale) / 2;
+                const oy = - (12 * scale) / 2;
+
+                drawPixelSprite(ctx, sprite, palette, scale, ox, oy);
+                ctx.restore();
+            }
+
+            update() {
+                for (let s = 0; s < this.speed; s++) {
+                    this.step();
+                    if (gameState !== 'PLAY') return;
+                }
+            }
+
+            step() {
+                if (isOpposite(this.dir, this.nextDir)) {
+                    this.dir = this.nextDir;
+                }
+
+                const atCenterX = (this.x - CELL_SIZE / 2) % CELL_SIZE === 0;
+                const atCenterY = (this.y - CELL_SIZE / 2) % CELL_SIZE === 0;
+
+                if (atCenterX && atCenterY) {
+                    const gx = Math.round((this.x - CELL_SIZE / 2) / CELL_SIZE);
+                    const gy = Math.round((this.y - CELL_SIZE / 2) / CELL_SIZE);
+
+                    if (map[gy] && map[gy][gx] === 2) {
+                        map[gy][gx] = 0;
+                        score += 10;
+                        updateHUD();
+                        playSound('chomp');
+                        checkWin();
+                    } else if (map[gy] && map[gy][gx] === 3) {
+                        map[gy][gx] = 0;
+                        const key = `${gy},${gx}`;
+                        const qIdx = soupQuestionMap[key] !== undefined ? soupQuestionMap[key] : 0;
+                        const soupType = soupTypeMap[key] !== undefined ? soupTypeMap[key] : 0;
+                        delete soupQuestionMap[key];
+                        delete soupTypeMap[key];
+                        triggerQuiz(qIdx, soupType);
+                        return; 
+                    }
+
+                    if (this.nextDir !== DIR.STOP && canMove(gx, gy, this.nextDir)) {
+                        this.dir = this.nextDir;
+                    }
+
+                    if (!canMove(gx, gy, this.dir)) {
+                        this.dir = DIR.STOP;
+                        return;
+                    }
+                }
+
+                if (this.dir === DIR.RIGHT) this.x += 1;
+                else if (this.dir === DIR.LEFT) this.x -= 1;
+                else if (this.dir === DIR.UP) this.y -= 1;
+                else if (this.dir === DIR.DOWN) this.y += 1;
+
+                if (this.x < -CELL_SIZE / 2) this.x = COLS * CELL_SIZE + CELL_SIZE / 2;
+                else if (this.x > COLS * CELL_SIZE + CELL_SIZE / 2) this.x = -CELL_SIZE / 2;
+            }
+        }
+
+        // ================= 老闆角色類別 =================
+        class Ghost {
+            constructor(gx, gy, towelColor, propType) {
+                this.startX = gx;
+                this.startY = gy;
+                this.towelColor = towelColor;
+                this.propType = propType;
+                this.reset();
+            }
+            reset() {
+                this.x = this.startX * CELL_SIZE + CELL_SIZE / 2;
+                this.y = this.startY * CELL_SIZE + CELL_SIZE / 2;
+                this.dir = DIR.UP;
+                this.state = 'NORMAL'; 
+            }
+            get gridX() { return Math.floor(this.x / CELL_SIZE); }
+            get gridY() { return Math.floor(this.y / CELL_SIZE); }
+
+            draw() {
+                ctx.save();
+                const wobble = (this.dir !== DIR.STOP) ? Math.sin(frameCount * 0.25 + this.propType) * 1.5 : 0;
+                ctx.translate(this.x, this.y + wobble);
+
+                if (this.dir === DIR.LEFT) ctx.scale(-1, 1);
+
+                const isScared = this.state === 'SCARED';
+                let sprite;
+                let palette;
+
+                if (isScared) {
+                    sprite = [
+                        '...SSS......',
+                        '.GGSSSSG....',
+                        'G..O..O.G...',
+                        '...SSSS.....',
+                        '..SBBBB.....',
+                        '.T.VVVV.T...',
+                        '.T.VVVV.T...',
+                        '..KKKK......',
+                        '..SS.SS.....',
+                        '..BW.BW.....',
+                        '............',
+                        '............'
+                    ];
+                    palette = {
+                        'S': '#7986cb', 'G': '#c5cae9', 'O': '#ffffff',
+                        'B': '#e8eaf6', 'T': '#e0e0e0', 'V': '#3949ab',
+                        'K': '#1a237e', 'B': '#1565c0', 'W': '#ffffff'
+                    };
+                    ctx.fillStyle = '#40c4ff';
+                    ctx.fillRect(6, -8, 2, 3);
+                    ctx.fillRect(7, -7, 2, 2);
+                } else {
+                    sprite = [
+                        '...SSS......',
+                        '.GGSSSSGG...',
+                        'G..E..E.G...',
+                        '...SSSS.....',
+                        '..SBBBB.....',
+                        '.T.VVVV.T...',
+                        '.T.VVVV.T...',
+                        '..KKKK......',
+                        '..SS.SS.....',
+                        '..BW.BW.....',
+                        '............',
+                        '............'
+                    ];
+                    palette = {
+                        'S': '#f5cba7', 'G': '#cfd8dc', 'E': '#000000',
+                        'B': '#eceff1', 'T': this.towelColor, 'V': '#ffffff',
+                        'K': '#8d6e63', 'B': '#1565c0', 'W': '#ffffff'
+                    };
+                }
+
+                const scale = 1.35;
+                const ox = - (12 * scale) / 2;
+                const oy = - (12 * scale) / 2;
+
+                drawPixelSprite(ctx, sprite, palette, scale, ox, oy);
+                ctx.restore();
+            }
+
+            update() {
+                let steps = (this.state === 'SCARED') ? ((frameCount % 2 === 0) ? 1 : 0) : ((frameCount % 4 === 0) ? 1 : 2);
+                for (let s = 0; s < steps; s++) {
+                    this.step();
+                }
+            }
+
+            step() {
+                const atCenterX = (this.x - CELL_SIZE / 2) % CELL_SIZE === 0;
+                const atCenterY = (this.y - CELL_SIZE / 2) % CELL_SIZE === 0;
+
+                if (atCenterX && atCenterY) {
+                    const gx = Math.round((this.x - CELL_SIZE / 2) / CELL_SIZE);
+                    const gy = Math.round((this.y - CELL_SIZE / 2) / CELL_SIZE);
+
+                    this.chooseDirection(gx, gy);
+
+                    if (!canMove(gx, gy, this.dir)) {
+                        this.dir = DIR.STOP;
+                        return;
+                    }
+                }
+
+                if (this.dir === DIR.RIGHT) this.x += 1;
+                else if (this.dir === DIR.LEFT) this.x -= 1;
+                else if (this.dir === DIR.UP) this.y -= 1;
+                else if (this.dir === DIR.DOWN) this.y += 1;
+
+                if (this.x < -CELL_SIZE / 2) this.x = COLS * CELL_SIZE + CELL_SIZE / 2;
+                else if (this.x > COLS * CELL_SIZE + CELL_SIZE / 2) this.x = -CELL_SIZE / 2;
+            }
+
+            chooseDirection(gx, gy) {
+                const allDirs = [DIR.UP, DIR.DOWN, DIR.LEFT, DIR.RIGHT];
+                let validDirs = [];
+
+                for (let d of allDirs) {
+                    if (isOpposite(d, this.dir)) continue;
+                    if (canMove(gx, gy, d)) validDirs.push(d);
+                }
+
+                if (validDirs.length === 0) {
+                    for (let d of allDirs) {
+                        if (canMove(gx, gy, d)) validDirs.push(d);
+                    }
+                }
+
+                if (validDirs.length > 0) {
+                    if (this.state === 'SCARED' || Math.random() < 0.45) {
+                        this.dir = validDirs[Math.floor(Math.random() * validDirs.length)];
+                    } else {
+                        let bestDir = validDirs[0];
+                        let minDist = Infinity;
+                        for (let d of validDirs) {
+                            let tx = gx + (d === DIR.RIGHT ? 1 : d === DIR.LEFT ? -1 : 0);
+                            let ty = gy + (d === DIR.DOWN ? 1 : d === DIR.UP ? -1 : 0);
+                            let dist = Math.hypot(tx - player.gridX, ty - player.gridY);
+                            if (dist < minDist) {
+                                minDist = dist;
+                                bestDir = d;
+                            }
+                        }
+                        this.dir = bestDir;
+                    }
+                }
+            }
+        }
+
+        const GHOST_ROSTER = [
+            { gx: 9, gy: 7, towel: '#ff3d00', id: 1 }, 
+            { gx: 9, gy: 8, towel: '#00e676', id: 2 }, 
+            { gx: 8, gy: 8, towel: '#ff9100', id: 3 }, 
+            { gx: 10, gy: 8, towel: '#d500f9', id: 4 } 
+        ];
+
+        let player = new Player(9, 15);
+        let ghosts = [];
+
+        function initGhostTeam() {
+            ghosts = [];
+            const count = Math.min(4, Math.max(1, ghostCount));
+            for (let i = 0; i < count; i++) {
+                const conf = GHOST_ROSTER[i];
+                ghosts.push(new Ghost(conf.gx, conf.gy, conf.towel, conf.id));
+            }
+        }
+
+        function resetAllPositions() {
+            player.reset();
+            ghosts.forEach(g => g.reset());
+        }
+
+        // ================= 跨平台直連點擊綁定（徹底修復按鈕無回應） =================
+        function bindClick(elementId, callback) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            let lastFired = 0;
+            const handler = (e) => {
+                if (Date.now() - lastFired < 200) return;
+                lastFired = Date.now();
+                initAudio();
+                callback(e);
+            };
+            el.addEventListener('click', handler);
+        }
+
+        // ================= 鍵盤與滑動監聽 =================
+        window.addEventListener('keydown', (e) => {
+            if (gameState !== 'PLAY') return;
+            switch(e.key) {
+                case 'ArrowUp': case 'w': case 'W': player.nextDir = DIR.UP; break;
+                case 'ArrowDown': case 's': case 'S': player.nextDir = DIR.DOWN; break;
+                case 'ArrowLeft': case 'a': case 'A': player.nextDir = DIR.LEFT; break;
+                case 'ArrowRight': case 'd': case 'D': player.nextDir = DIR.RIGHT; break;
+            }
+        });
+
+        let touchStartX = 0, touchStartY = 0;
+        canvas.addEventListener('touchstart', e => {
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                touchStartX = e.changedTouches[0].clientX;
+                touchStartY = e.changedTouches[0].clientY;
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', e => {
+            if (gameState !== 'PLAY' || !e.changedTouches || e.changedTouches.length === 0) return;
+            let dx = e.changedTouches[0].clientX - touchStartX;
+            let dy = e.changedTouches[0].clientY - touchStartY;
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > 20) player.nextDir = DIR.RIGHT;
+                else if (dx < -20) player.nextDir = DIR.LEFT;
+            } else { 
+                if (dy > 20) player.nextDir = DIR.DOWN;
+                else if (dy < -20) player.nextDir = DIR.UP;
+            }
+        }, { passive: true });
+
+        function bindDirectionButton(btnId, direction) {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            const handler = (e) => {
+                initAudio();
+                if (gameState === 'PLAY') {
+                    player.nextDir = direction;
+                }
+            };
+            btn.addEventListener('pointerdown', handler);
+        }
+
+        bindDirectionButton('btn-up', DIR.UP);
+        bindDirectionButton('btn-down', DIR.DOWN);
+        bindDirectionButton('btn-left', DIR.LEFT);
+        bindDirectionButton('btn-right', DIR.RIGHT);
+
+        // ================= 主畫面流程控制 =================
+        bindClick('start-btn', () => {
+            let nameInput = document.getElementById('player-name-input').value.trim();
+            playerName = nameInput !== "" ? nameInput : "吃貨小精靈";
+            document.getElementById('display-name').innerText = playerName;
+            document.getElementById('start-screen').classList.add('hidden');
+            startGame(true);
+        });
+
+        bindClick('restart-btn', () => {
+            document.getElementById('game-over-screen').classList.add('hidden');
+            startGame(true);
+        });
+
+        bindClick('menu-btn', () => {
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            gameState = 'START';
+            cancelAnimationFrame(animationId);
+            map = buildDynamicMap();
+            drawMap();
+        });
+
+        function startGame(fullReset) {
+            if (fullReset) {
+                score = 0;
+                lives = 3;
+                map = buildDynamicMap();
+                initGhostTeam();
+            }
+            resetAllPositions();
+            powerModeTime = 0;
+            updateHUD();
+            gameState = 'PLAY';
+            cancelAnimationFrame(animationId);
+            gameLoop();
+        }
+
+        function updateHUD() {
+            document.getElementById('score').innerText = score;
+            document.getElementById('lives').innerText = '❤️❤️❤️'.slice(0, lives * 2);
+        }
+
+        // ================= 編輯器管理 =================
+        const editorScreen = document.getElementById('editor-screen');
+        const editorList = document.getElementById('editor-list');
+        const selectMap = document.getElementById('select-map');
+        const selectGhosts = document.getElementById('select-ghosts');
+        const currentQuizCount = document.getElementById('current-quiz-count');
+
+        bindClick('btn-open-editor', () => {
+            editingQuizBank = JSON.parse(JSON.stringify(quizBank));
+            selectMap.value = selectedMapType;
+            selectGhosts.value = ghostCount;
+            renderEditor();
+            document.getElementById('start-screen').classList.add('hidden');
+            editorScreen.classList.remove('hidden');
+        });
+
+        bindClick('btn-cancel-quiz', () => {
+            editorScreen.classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        });
+
+        bindClick('btn-save-quiz', () => {
+            if (editingQuizBank.length === 0) {
+                alert("題庫至少需要保留一道題目！");
+                return;
+            }
+            quizBank = JSON.parse(JSON.stringify(editingQuizBank));
+            selectedMapType = selectMap.value;
+            ghostCount = parseInt(selectGhosts.value, 10);
+
+            safeSetStorage(STORAGE_KEY_QUIZ, JSON.stringify(quizBank));
+            safeSetStorage(STORAGE_KEY_MAP, selectedMapType);
+            safeSetStorage(STORAGE_KEY_GHOSTS, ghostCount.toString());
+
+            alert(`設定已成功儲存！\n地圖：${selectedMapType}\n老闆：${ghostCount} 位\n特色湯品：共 ${quizBank.length} 碗 (對應 ${quizBank.length} 道題目)`);
+            
+            map = buildDynamicMap();
+            initGhostTeam();
+            drawMap();
+
+            editorScreen.classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        });
+
+        bindClick('btn-reset-default', () => {
+            if (confirm("確定要恢復預設指定的 4 道題目設定嗎？")) {
+                editingQuizBank = JSON.parse(JSON.stringify(DEFAULT_QUIZ_BANK));
+                selectMap.value = 'normal';
+                selectGhosts.value = 2;
+                renderEditor();
+            }
+        });
+
+        bindClick('btn-add-quiz', () => {
+            editingQuizBank.push({
+                q: "全新題目名稱",
+                qImg: "",
+                options: [
+                    { text: "1. 選項一 (正解)", img: "" },
+                    { text: "2. 選項二", img: "" },
+                    { text: "3. 選項三", img: "" },
+                    { text: "4. 選項四", img: "" }
+                ],
+                ans: 0
+            });
+            renderEditor();
+            editorList.scrollTop = editorList.scrollHeight;
+        });
+
+        function renderEditor() {
+            currentQuizCount.innerText = editingQuizBank.length;
+            editorList.innerHTML = '';
+
+            editingQuizBank.forEach((item, qIndex) => {
+                const card = document.createElement('div');
+                card.className = 'quiz-card';
+
+                const head = document.createElement('div');
+                head.className = 'quiz-card-head';
+                const assignedSoup = SOUP_ROSTER[qIndex % SOUP_ROSTER.length];
+                head.innerHTML = `<span>第 ${qIndex + 1} 題 (對應地圖【${assignedSoup}】圖示)</span>`;
+                
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn btn-danger';
+                delBtn.type = 'button';
+                delBtn.style.padding = '2px 8px';
+                delBtn.style.fontSize = '11px';
+                delBtn.innerText = '刪除此題';
+                delBtn.onclick = () => {
+                    if (editingQuizBank.length <= 1) {
+                        alert("至少要保留一道題目喔！");
+                        return;
+                    }
+                    editingQuizBank.splice(qIndex, 1);
+                    renderEditor();
+                };
+                head.appendChild(delBtn);
+                card.appendChild(head);
+
+                const qTextInput = document.createElement('input');
+                qTextInput.className = 'editor-input';
+                qTextInput.placeholder = '輸入題目內容...';
+                qTextInput.value = item.q;
+                qTextInput.onchange = (e) => { item.q = e.target.value; };
+                card.appendChild(qTextInput);
+
+                const qImgRow = document.createElement('div');
+                qImgRow.className = 'opt-row';
+                
+                const qPreview = document.createElement('img');
+                qPreview.className = 'opt-preview';
+                qPreview.src = item.qImg || '';
+                
+                const qImgInput = document.createElement('input');
+                qImgInput.className = 'editor-input';
+                qImgInput.placeholder = '圖片網址 (可留空或點右側上傳照片)';
+                qImgInput.value = (item.qImg && item.qImg.startsWith('data:image')) ? '[照片已載入]' : (item.qImg || '');
+                qImgInput.onchange = (e) => {
+                    item.qImg = e.target.value;
+                    qPreview.src = item.qImg;
+                };
+
+                const qFileInput = document.createElement('input');
+                qFileInput.type = 'file';
+                qFileInput.accept = 'image/*';
+                qFileInput.style.display = 'none';
+                qFileInput.onchange = (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        processImageFile(e.target.files[0], (base64) => {
+                            item.qImg = base64;
+                            qPreview.src = base64;
+                            qImgInput.value = '[已載入自訂照片]';
+                        });
+                    }
+                };
+
+                const qUploadLabel = document.createElement('button');
+                qUploadLabel.type = 'button';
+                qUploadLabel.className = 'upload-btn-label';
+                qUploadLabel.innerText = '📂 上傳圖片';
+                qUploadLabel.onclick = () => qFileInput.click();
+
+                qImgRow.appendChild(qPreview);
+                qImgRow.appendChild(qImgInput);
+                qImgRow.appendChild(qUploadLabel);
+                qImgRow.appendChild(qFileInput);
+                card.appendChild(qImgRow);
+
+                const optBox = document.createElement('div');
+                optBox.style.display = 'flex';
+                optBox.style.flexDirection = 'column';
+                optBox.style.gap = '4px';
+                optBox.style.marginTop = '4px';
+
+                item.options.forEach((opt, optIndex) => {
+                    const optRow = document.createElement('div');
+                    optRow.className = 'opt-row';
+
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = `ans_${qIndex}`;
+                    radio.checked = (item.ans === optIndex);
+                    radio.title = '設為正確解答';
+                    radio.onchange = () => { item.ans = optIndex; };
+
+                    const optPreview = document.createElement('img');
+                    optPreview.className = 'opt-preview';
+                    optPreview.src = opt.img || '';
+
+                    const optTextInput = document.createElement('input');
+                    optTextInput.className = 'editor-input';
+                    optTextInput.style.flex = '1';
+                    optTextInput.placeholder = `選項 ${optIndex + 1} 文字`;
+                    optTextInput.value = opt.text;
+                    optTextInput.onchange = (e) => { opt.text = e.target.value; };
+
+                    const optFileInput = document.createElement('input');
+                    optFileInput.type = 'file';
+                    optFileInput.accept = 'image/*';
+                    optFileInput.style.display = 'none';
+                    optFileInput.onchange = (e) => {
+                        if (e.target.files && e.target.files[0]) {
+                            processImageFile(e.target.files[0], (base64) => {
+                                opt.img = base64;
+                                optPreview.src = base64;
+                            });
+                        }
+                    };
+
+                    const optUploadLabel = document.createElement('button');
+                    optUploadLabel.type = 'button';
+                    optUploadLabel.className = 'upload-btn-label';
+                    optUploadLabel.innerText = '📂 選圖';
+                    optUploadLabel.onclick = () => optFileInput.click();
+
+                    optRow.appendChild(radio);
+                    optRow.appendChild(optPreview);
+                    optRow.appendChild(optTextInput);
+                    optRow.appendChild(optUploadLabel);
+                    optRow.appendChild(optFileInput);
+                    optBox.appendChild(optRow);
+                });
+
+                card.appendChild(optBox);
+                editorList.appendChild(card);
+            });
+        }
+
+        // ================= 觸發對應題目（1 對 1 綁定，不再重複） =================
+        function triggerQuiz(quizIndex = 0, soupTypeIndex = 0) {
+            if (gameState === 'QUIZ') return;
+            gameState = 'QUIZ';
+            playSound('power');
+            
+            if (quizTimer) clearTimeout(quizTimer);
+
+            currentQuiz = quizBank[quizIndex] || quizBank[0];
+            
+            const soupName = SOUP_ROSTER[soupTypeIndex % SOUP_ROSTER.length];
+            document.getElementById('quiz-title').innerText = `🍲 品嚐【${soupName}】能量大爆發！`;
+            document.getElementById('quiz-title').style.color = "var(--neon-yellow)";
+            
+            document.getElementById('quiz-question').innerText = currentQuiz.q;
+
+            const qImgElement = document.getElementById('quiz-q-img');
+            if (currentQuiz.qImg && currentQuiz.qImg.trim() !== '') {
+                qImgElement.src = currentQuiz.qImg;
+                qImgElement.classList.remove('hidden');
+            } else {
+                qImgElement.classList.add('hidden');
+            }
+            
+            const optionsDiv = document.getElementById('quiz-options');
+            optionsDiv.innerHTML = '';
+            document.getElementById('quiz-feedback').innerHTML = '';
+            
+            const continueBtn = document.getElementById('quiz-continue-btn');
+            continueBtn.classList.add('hidden');
+
+            currentQuiz.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn quiz-btn';
+                btn.type = 'button';
+
+                const optText = typeof opt === 'string' ? opt : opt.text;
+                const optImg = (typeof opt === 'object' && opt.img) ? opt.img : null;
+
+                const span = document.createElement('span');
+                span.className = 'quiz-opt-text';
+                span.innerText = optText;
+                btn.appendChild(span);
+
+                if (optImg && optImg.trim() !== '') {
+                    const img = document.createElement('img');
+                    img.className = 'quiz-opt-img';
+                    img.src = optImg;
+                    btn.appendChild(img);
+                }
+
+                btn.addEventListener('click', () => {
+                    initAudio();
+                    handleQuizAnswer(idx, btn);
+                });
+                optionsDiv.appendChild(btn);
+            });
+
+            document.getElementById('quiz-screen').classList.remove('hidden');
+        }
+
+        function handleQuizAnswer(selectedIndex, btnElement) {
+            const btns = document.querySelectorAll('.quiz-btn');
+            btns.forEach(b => b.disabled = true);
+
+            const feedback = document.getElementById('quiz-feedback');
+            const title = document.getElementById('quiz-title');
+            const continueBtn = document.getElementById('quiz-continue-btn');
+
+            continueBtn.classList.remove('hidden');
+
+            const correctOpt = currentQuiz.options[currentQuiz.ans];
+            const correctText = typeof correctOpt === 'string' ? correctOpt : correctOpt.text;
+
+            if (selectedIndex === currentQuiz.ans) {
+                title.innerText = "✨ 回答正確！能量爆發！";
+                title.style.color = "var(--neon-blue)";
+                feedback.innerHTML = "<span style='color:var(--neon-blue)'>答對了！老伯嚇到臉綠了，快追！</span><br><span style='color:#aaaaaa'>(2 秒後自動返回...)</span>";
+                btnElement.style.background = "var(--neon-blue)";
+                btnElement.style.color = "#000000";
+
+                powerModeTime = 450; 
+                ghosts.forEach(g => g.state = 'SCARED');
+                playSound('power');
+
+                quizTimer = setTimeout(() => resumeGame(), 2000);
+            } else {
+                title.innerText = "❌ 答錯囉！";
+                title.style.color = "var(--neon-pink)";
+                feedback.innerHTML = `<span style='color:var(--neon-pink)'>正確答案是：【${correctText}】</span><br><span style='color:#aaaaaa'>能量被沒收了...(2.5 秒後自動返回...)</span>`;
+                btnElement.style.background = "var(--neon-pink)";
+                btnElement.style.color = "#ffffff";
+
+                btns[currentQuiz.ans].style.borderColor = "var(--neon-blue)";
+                btns[currentQuiz.ans].style.boxShadow = "0 0 10px var(--neon-blue) inset";
+                playSound('die');
+
+                quizTimer = setTimeout(() => resumeGame(), 2500);
+            }
+        }
+
+        function resumeGame() {
+            if (quizTimer) {
+                clearTimeout(quizTimer);
+                quizTimer = null;
+            }
+            document.getElementById('quiz-screen').classList.add('hidden');
+            gameState = 'PLAY';
+            cancelAnimationFrame(animationId);
+            gameLoop();
+        }
+
+        bindClick('quiz-continue-btn', () => {
+            resumeGame();
+        });
+
+        // ================= 遊戲核心循環 =================
+        function gameLoop() {
+            if (gameState !== 'PLAY') return;
+            frameCount++;
+
+            player.update();
+            if (gameState !== 'PLAY') return;
+
+            ghosts.forEach(g => g.update());
+
+            if (powerModeTime > 0) {
+                powerModeTime--;
+                if (powerModeTime === 0) ghosts.forEach(g => g.state = 'NORMAL');
+            }
+
+            const hitDistance = CELL_SIZE * 0.75;
+            for (let g of ghosts) {
+                let dist = Math.hypot(player.x - g.x, player.y - g.y);
+                if (dist < hitDistance) {
+                    if (g.state === 'SCARED') {
+                        score += 50;
+                        updateHUD();
+                        playSound('eatGhost');
+                        g.reset(); 
+                    } else {
+                        handleDeath();
+                        return;
+                    }
+                }
+            }
+
+            drawMap();
+            player.draw();
+            ghosts.forEach(g => g.draw());
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function handleDeath() {
+            gameState = 'PAUSE';
+            playSound('die');
+            lives--;
+            updateHUD();
+            
+            if (lives > 0) {
+                setTimeout(() => {
+                    resetAllPositions();
+                    gameState = 'PLAY';
+                    gameLoop();
+                }, 1200);
+            } else {
+                gameState = 'GAMEOVER';
+                setTimeout(() => {
+                    document.getElementById('end-title').innerText = "Game Over";
+                    document.getElementById('end-message').innerText = "肚子撐破啦！被熱情老伯抓到了！";
+                    document.getElementById('final-score').innerText = score;
+                    document.getElementById('game-over-screen').classList.remove('hidden');
+                }, 800);
+            }
+        }
+
+        function checkWin() {
+            let hasFood = false;
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (map[r][c] === 2 || map[r][c] === 3) hasFood = true;
+                }
+            }
+            if (!hasFood) {
+                gameState = 'VICTORY';
+                document.getElementById('end-title').innerText = "通關大吉！";
+                document.getElementById('end-title').style.color = "var(--neon-blue)";
+                document.getElementById('end-message').innerText = "太厲害了！你吃光了整座夜市的美食！";
+                document.getElementById('final-score').innerText = score;
+                document.getElementById('game-over-screen').classList.remove('hidden');
+            }
+        }
+
+        // 初始建立地圖與老闆
+        map = buildDynamicMap();
+        initGhostTeam();
+        drawMap();
+    </script>
+</body>
+</html>
