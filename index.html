@@ -12,7 +12,8 @@
             --neon-green: #00ff66;
             --bg-color: #111111;
             --text-color: #ffffff;
-            --game-size: min(92vw, calc(100vh - 110px));
+            /* 移除虛擬按鍵後，在任何螢幕上皆呈現最大滿版正方形 */
+            --game-size: min(94vw, calc(100vh - 85px));
         }
         
         * { 
@@ -348,41 +349,6 @@
             background: var(--neon-blue);
             color: #000000;
         }
-
-        /* 虛擬方向鍵 */
-        #d-pad {
-            display: none;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 10px;
-            width: 150px;
-            height: 150px;
-            touch-action: none;
-        }
-        .d-btn {
-            background: rgba(255,255,255,0.1);
-            border: 2px solid var(--neon-yellow);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: var(--neon-yellow);
-            touch-action: none;
-        }
-        .d-btn:active { background: rgba(255, 196, 0, 0.5); }
-        #btn-up { grid-column: 2; grid-row: 1; }
-        #btn-left { grid-column: 1; grid-row: 2; }
-        #btn-right { grid-column: 3; grid-row: 2; }
-        #btn-down { grid-column: 2; grid-row: 3; }
-
-        @media (hover: none) and (pointer: coarse), (max-width: 900px) {
-            :root {
-                --game-size: min(92vw, calc(100vh - 240px));
-            }
-            #d-pad { display: grid; }
-        }
     </style>
 </head>
 <body>
@@ -405,7 +371,7 @@
                 <button class="btn btn-green" id="start-btn" type="button">開始營業 / 出發！</button>
                 <button class="btn" id="btn-open-editor" type="button">⚙️ 難度與題庫管理</button>
             </div>
-            <p style="font-size:clamp(11px, 1.8vmin, 14px); margin-top:12px; color:#aaaaaa;">(支援觸控滑動 / 虛擬按鍵 / 鍵盤)</p>
+            <p style="font-size:clamp(11px, 1.8vmin, 14px); margin-top:12px; color:#aaaaaa;">(支援螢幕觸控滑動 / 鍵盤 WASD 方向鍵)</p>
         </div>
 
         <!-- 2. 遊戲設定與題庫編輯頁面 -->
@@ -470,14 +436,6 @@
                 <button class="btn" id="menu-btn" type="button">🏠 返回主畫面</button>
             </div>
         </div>
-    </div>
-
-    <!-- 虛擬方向鍵 -->
-    <div id="d-pad">
-        <div class="d-btn" id="btn-up">▲</div>
-        <div class="d-btn" id="btn-left">◀</div>
-        <div class="d-btn" id="btn-right">▶</div>
-        <div class="d-btn" id="btn-down">▼</div>
     </div>
 
     <script>
@@ -630,9 +588,9 @@
             } catch (e) {}
         }
 
-        const STORAGE_KEY_QUIZ = 'NM_PACMAN_STABLE_V1';
-        const STORAGE_KEY_MAP = 'NM_MAP_STABLE_V1';
-        const STORAGE_KEY_GHOSTS = 'NM_GHOSTS_STABLE_V1';
+        const STORAGE_KEY_QUIZ = 'NM_PACMAN_CLEAN_V10';
+        const STORAGE_KEY_MAP = 'NM_MAP_CLEAN_V10';
+        const STORAGE_KEY_GHOSTS = 'NM_GHOSTS_CLEAN_V10';
 
         function loadSavedSettings() {
             let q = null;
@@ -692,6 +650,7 @@
             reader.readAsDataURL(file);
         }
 
+        // ================= 1 對 1 湯品與題目嚴格綁定演算法 =================
         function buildDynamicMap() {
             const template = MAP_TEMPLATES[selectedMapType] || MAP_TEMPLATES.normal;
             let newMap = template.map(row => [...row]);
@@ -734,6 +693,7 @@
                 }
             }
 
+            // 嚴格 1 對 1 綁定：第 i 個座標對應第 i 道題目！
             chosenSoupSpots.forEach((pt, index) => {
                 newMap[pt.r][pt.c] = 3;
                 soupQuestionMap[`${pt.r},${pt.c}`] = index;
@@ -756,7 +716,7 @@
             }
         }
 
-        // ================= 7 大台灣特色湯品圖示（已完全消除語法相容問題） =================
+        // ================= 7 大台灣特色湯品圖示繪製 =================
         function drawDiverseSoup(cx, cy, type) {
             const timeOffset = Math.sin(Date.now() / 150 + type) * 2; 
             const drawY = cy + timeOffset - 2;
@@ -798,13 +758,12 @@
                     ctx.fill();
                     break;
 
-                case 3: // 4. 酥皮濃湯 (以標準 rect + arc 繪製，移除 roundRect 防崩潰)[cite: 2]
+                case 3: // 4. 酥皮濃湯[cite: 2]
                     ctx.fillStyle = '#f8fafc';
                     ctx.beginPath(); ctx.arc(cx, drawY + 4, 6, 0, Math.PI); ctx.fill();
                     ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1.5;
                     ctx.beginPath(); ctx.arc(cx - 6, drawY + 3, 2.5, Math.PI*0.5, Math.PI*1.5); ctx.stroke();
                     ctx.beginPath(); ctx.arc(cx + 6, drawY + 3, 2.5, -Math.PI*0.5, Math.PI*0.5); ctx.stroke();
-                    // 金黃澎澎酥皮
                     ctx.fillStyle = '#f59e0b';
                     ctx.fillRect(cx - 8, drawY - 4, 16, 7);
                     ctx.fillStyle = '#b45309';
@@ -1245,7 +1204,7 @@
             ghosts.forEach(g => g.reset());
         }
 
-        // ================= 跨平台直連點擊綁定（徹底修復按鈕無回應） =================
+        // ================= 跨平台直連點擊綁定 =================
         function bindClick(elementId, callback) {
             const el = document.getElementById(elementId);
             if (!el) return;
@@ -1259,7 +1218,7 @@
             el.addEventListener('click', handler);
         }
 
-        // ================= 鍵盤與滑動監聽 =================
+        // ================= 鍵盤與滑動監聽（純鍵盤 + 觸控滑動） =================
         window.addEventListener('keydown', (e) => {
             if (gameState !== 'PLAY') return;
             switch(e.key) {
@@ -1270,15 +1229,16 @@
             }
         });
 
+        // 螢幕觸控滑動 (Swipe 手勢控制)
         let touchStartX = 0, touchStartY = 0;
-        canvas.addEventListener('touchstart', e => {
+        window.addEventListener('touchstart', e => {
             if (e.changedTouches && e.changedTouches.length > 0) {
                 touchStartX = e.changedTouches[0].clientX;
                 touchStartY = e.changedTouches[0].clientY;
             }
         }, { passive: true });
 
-        canvas.addEventListener('touchend', e => {
+        window.addEventListener('touchend', e => {
             if (gameState !== 'PLAY' || !e.changedTouches || e.changedTouches.length === 0) return;
             let dx = e.changedTouches[0].clientX - touchStartX;
             let dy = e.changedTouches[0].clientY - touchStartY;
@@ -1290,23 +1250,6 @@
                 else if (dy < -20) player.nextDir = DIR.UP;
             }
         }, { passive: true });
-
-        function bindDirectionButton(btnId, direction) {
-            const btn = document.getElementById(btnId);
-            if (!btn) return;
-            const handler = (e) => {
-                initAudio();
-                if (gameState === 'PLAY') {
-                    player.nextDir = direction;
-                }
-            };
-            btn.addEventListener('pointerdown', handler);
-        }
-
-        bindDirectionButton('btn-up', DIR.UP);
-        bindDirectionButton('btn-down', DIR.DOWN);
-        bindDirectionButton('btn-left', DIR.LEFT);
-        bindDirectionButton('btn-right', DIR.RIGHT);
 
         // ================= 主畫面流程控制 =================
         bindClick('start-btn', () => {
