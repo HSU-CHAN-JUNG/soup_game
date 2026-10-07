@@ -12,7 +12,6 @@
             --neon-green: #00ff66;
             --bg-color: #111111;
             --text-color: #ffffff;
-            /* 移除虛擬按鍵後，在任何螢幕上皆呈現最大滿版正方形 */
             --game-size: min(94vw, calc(100vh - 85px));
         }
         
@@ -112,16 +111,31 @@
             margin-bottom: clamp(8px, 1.8vmin, 16px);
             font-size: clamp(20px, 4vmin, 32px);
         }
-        .modal h2 {
+
+        /* 調整：標題字體縮小 */
+        .modal h2#quiz-title {
             color: var(--neon-yellow) !important;
-            font-size: clamp(16px, 2.8vmin, 22px);
-            margin-bottom: 6px;
+            font-size: clamp(13px, 2vmin, 16px) !important;
+            font-weight: 600;
+            margin-bottom: 4px;
+            opacity: 0.9;
+            letter-spacing: 1px;
         }
+
         .modal p { 
             color: #ffffff !important;
             margin-bottom: 8px; 
             line-height: 1.4; 
-            font-size: clamp(13px, 2vmin, 17px); 
+        }
+
+        /* 調整：題目文字大幅放大 */
+        #quiz-question {
+            font-size: clamp(18px, 3vmin, 25px) !important;
+            font-weight: bold !important;
+            color: var(--neon-blue) !important;
+            margin: 6px 0 10px !important;
+            line-height: 1.35 !important;
+            text-shadow: 0 0 8px rgba(5, 217, 232, 0.4);
         }
 
         /* 霓虹按鈕 */
@@ -196,7 +210,7 @@
             grid-template-columns: 1fr 1fr;
             width: 95%;
             max-width: 440px;
-            gap: clamp(6px, 1.2vmin, 10px);
+            gap: clamp(8px, 1.4vmin, 12px);
         }
         @media (max-width: 380px) {
             .quiz-options { grid-template-columns: 1fr; }
@@ -205,27 +219,30 @@
             border-color: var(--neon-pink);
             color: #ffffff;
             box-shadow: 0 0 5px var(--neon-pink) inset;
-            padding: clamp(8px, 1.2vmin, 12px) clamp(8px, 1vmin, 12px);
-            font-size: clamp(13px, 1.9vmin, 16px);
+            padding: clamp(10px, 1.6vmin, 15px) clamp(10px, 1.4vmin, 14px);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 6px;
             text-align: center;
-            min-height: 50px;
+            min-height: 56px;
         }
         .quiz-btn:active {
             background: rgba(255, 42, 109, 0.4) !important;
             border-color: var(--neon-yellow) !important;
         }
+
+        /* 調整：選項文字明顯放大 */
         .quiz-opt-text {
             width: 100%;
             white-space: normal;
             word-break: break-word;
-            line-height: 1.25;
+            line-height: 1.3;
             font-weight: bold;
+            font-size: clamp(16px, 2.6vmin, 21px) !important;
         }
+
         .quiz-opt-img {
             width: clamp(48px, 9vmin, 68px);
             height: clamp(48px, 9vmin, 68px);
@@ -415,10 +432,10 @@
             </div>
         </div>
 
-        <!-- 3. 美食問答畫面 -->
+        <!-- 3. 美食問答畫面 (字體大小優化、標題去除圖案) -->
         <div id="quiz-screen" class="modal hidden">
-            <h2 id="quiz-title">🍲 能量大爆發！</h2>
-            <p id="quiz-question" style="font-weight: bold; color: var(--neon-blue); font-size: clamp(14px, 2.3vmin, 18px); margin: 4px 0 6px;">題目載入中...</p>
+            <h2 id="quiz-title">品嚐【貢丸湯】能量大爆發！</h2>
+            <p id="quiz-question">題目載入中...</p>
             <img id="quiz-q-img" class="hidden" alt="題目圖片" />
             
             <div class="quiz-options" id="quiz-options"></div>
@@ -588,9 +605,9 @@
             } catch (e) {}
         }
 
-        const STORAGE_KEY_QUIZ = 'NM_PACMAN_CLEAN_V10';
-        const STORAGE_KEY_MAP = 'NM_MAP_CLEAN_V10';
-        const STORAGE_KEY_GHOSTS = 'NM_GHOSTS_CLEAN_V10';
+        const STORAGE_KEY_QUIZ = 'NM_PACMAN_GREEN_V11';
+        const STORAGE_KEY_MAP = 'NM_MAP_GREEN_V11';
+        const STORAGE_KEY_GHOSTS = 'NM_GHOSTS_GREEN_V11';
 
         function loadSavedSettings() {
             let q = null;
@@ -693,7 +710,6 @@
                 }
             }
 
-            // 嚴格 1 對 1 綁定：第 i 個座標對應第 i 道題目！
             chosenSoupSpots.forEach((pt, index) => {
                 newMap[pt.r][pt.c] = 3;
                 soupQuestionMap[`${pt.r},${pt.c}`] = index;
@@ -1030,7 +1046,7 @@
             }
         }
 
-        // ================= 老闆角色類別 =================
+        // ================= 老闆角色類別（變身時全身變綠） =================
         class Ghost {
             constructor(gx, gy, towelColor, propType) {
                 this.startX = gx;
@@ -1060,6 +1076,7 @@
                 let palette;
 
                 if (isScared) {
+                    // 全身綠化的像素外觀
                     sprite = [
                         '...SSS......',
                         '.GGSSSSG....',
@@ -1075,11 +1092,18 @@
                         '............'
                     ];
                     palette = {
-                        'S': '#7986cb', 'G': '#c5cae9', 'O': '#ffffff',
-                        'B': '#e8eaf6', 'T': '#e0e0e0', 'V': '#3949ab',
-                        'K': '#1a237e', 'B': '#1565c0', 'W': '#ffffff'
+                        'S': '#00e676', // 亮青綠皮膚
+                        'G': '#1b5e20', // 深墨綠頭髮
+                        'O': '#ffffff', // 驚恐白色大眼圈
+                        'B': '#69f0ae', // 淺亮綠鬍子
+                        'T': '#00c853', // 鮮綠毛巾
+                        'V': '#2e7d32', // 深綠汗衫
+                        'K': '#0f3813', // 濃綠短褲
+                        'B': '#1b5e20', // 墨綠拖鞋面
+                        'W': '#b9f6ca'  // 淺綠拖鞋底
                     };
-                    ctx.fillStyle = '#40c4ff';
+                    // 綠色驚嚇冷汗珠
+                    ctx.fillStyle = '#b9f6ca';
                     ctx.fillRect(6, -8, 2, 3);
                     ctx.fillRect(7, -7, 2, 2);
                 } else {
@@ -1229,7 +1253,6 @@
             }
         });
 
-        // 螢幕觸控滑動 (Swipe 手勢控制)
         let touchStartX = 0, touchStartY = 0;
         window.addEventListener('touchstart', e => {
             if (e.changedTouches && e.changedTouches.length > 0) {
@@ -1502,7 +1525,7 @@
             });
         }
 
-        // ================= 觸發對應題目（1 對 1 綁定，不再重複） =================
+        // ================= 觸發對應題目（標題純文字、文字放大） =================
         function triggerQuiz(quizIndex = 0, soupTypeIndex = 0) {
             if (gameState === 'QUIZ') return;
             gameState = 'QUIZ';
@@ -1513,8 +1536,8 @@
             currentQuiz = quizBank[quizIndex] || quizBank[0];
             
             const soupName = SOUP_ROSTER[soupTypeIndex % SOUP_ROSTER.length];
-            document.getElementById('quiz-title').innerText = `🍲 品嚐【${soupName}】能量大爆發！`;
-            document.getElementById('quiz-title').style.color = "var(--neon-yellow)";
+            // 調整：移除開頭圖案，只留純文字標題
+            document.getElementById('quiz-title').innerText = `品嚐【${soupName}】能量大爆發！`;
             
             document.getElementById('quiz-question').innerText = currentQuiz.q;
 
@@ -1577,9 +1600,9 @@
             const correctText = typeof correctOpt === 'string' ? correctOpt : correctOpt.text;
 
             if (selectedIndex === currentQuiz.ans) {
-                title.innerText = "✨ 回答正確！能量爆發！";
+                title.innerText = "回答正確！能量爆發！";
                 title.style.color = "var(--neon-blue)";
-                feedback.innerHTML = "<span style='color:var(--neon-blue)'>答對了！老伯嚇到臉綠了，快追！</span><br><span style='color:#aaaaaa'>(2 秒後自動返回...)</span>";
+                feedback.innerHTML = "<span style='color:var(--neon-blue)'>答對了！老伯嚇到全身發綠了，快追！</span><br><span style='color:#aaaaaa'>(2 秒後自動返回...)</span>";
                 btnElement.style.background = "var(--neon-blue)";
                 btnElement.style.color = "#000000";
 
@@ -1589,7 +1612,7 @@
 
                 quizTimer = setTimeout(() => resumeGame(), 2000);
             } else {
-                title.innerText = "❌ 答錯囉！";
+                title.innerText = "答錯囉！";
                 title.style.color = "var(--neon-pink)";
                 feedback.innerHTML = `<span style='color:var(--neon-pink)'>正確答案是：【${correctText}】</span><br><span style='color:#aaaaaa'>能量被沒收了...(2.5 秒後自動返回...)</span>`;
                 btnElement.style.background = "var(--neon-pink)";
