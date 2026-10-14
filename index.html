@@ -12,7 +12,6 @@
  --neon-green: #00ff66;
  --bg-color: #111111;
  --text-color: #ffffff;
- --game-size: min(92vw, calc(100vh - 95px));
  }
  
  * { 
@@ -45,9 +44,10 @@
  -webkit-user-select: auto !important;
  }
 
- /* HUD 狀態列 */
+ /* HUD 狀態列：隨遊戲容器動態最大化縮放 */
  #hud {
- width: var(--game-size);
+ width: 100%;
+ max-width: 96vw;
  display: flex;
  justify-content: space-between;
  padding: clamp(6px, 1.2vh, 12px) clamp(14px, 2vw, 24px);
@@ -58,21 +58,22 @@
  box-shadow: 0 0 10px var(--neon-blue);
  font-weight: bold;
  font-size: clamp(15px, 2.3vmin, 22px);
+ transition: width 0.15s ease-out;
  }
  
  .hud-item { display: flex; align-items: center; }
  #lives { color: var(--neon-pink); letter-spacing: 2px; }
 
- /* 遊戲畫布容器 */
+ /* 遊戲畫布容器：由 JS 依地圖比例動態設為最大尺寸 */
  #game-container {
  position: relative;
  box-shadow: 0 0 25px var(--neon-pink);
  border-radius: 10px;
  overflow: hidden;
  background-color: #050505 !important;
- width: var(--game-size);
- height: var(--game-size);
- aspect-ratio: 1 / 1;
+ max-width: 96vw;
+ max-height: calc(100vh - 90px);
+ transition: width 0.15s ease-out, height 0.15s ease-out;
  }
  
  canvas {
@@ -304,7 +305,7 @@
  flex-direction: column;
  gap: 10px;
  overflow-y: auto;
- max-height: calc(var(--game-size) - 190px);
+ max-height: calc(100% - 130px);
  padding-right: 4px;
  }
  .quiz-card {
@@ -375,12 +376,12 @@
  </div>
 
  <div id="game-container">
- <canvas id="gameCanvas" width="380" height="380"></canvas>
+ <canvas id="gameCanvas"></canvas>
 
  <!-- 1. 開場主畫面 -->
  <div id="start-screen" class="modal">
  <h1>夜市吃貨小精靈</h1>
- <p>台味吊嘎小哥 vs 熱情夜市老伯！<br>搜集「茄芷袋」觸發美食問答大爆發！</p>
+ <p>台味吊嘎小哥 vs 熱情夜市老伯！<br>搜集滿街「香噴噴烤肉串燒」與「茄芷袋」！</p>
  <input type="text" id="player-name-input" value="吃貨小精靈" placeholder="請輸入暱稱" maxlength="8">
  <div style="display: flex; flex-direction: column; width: 75%; max-width: 280px; gap: 8px;">
  <button class="btn btn-green" id="start-btn" type="button">開始營業 / 出發！</button>
@@ -405,7 +406,7 @@
  <select id="select-map" class="editor-select">
  <option value="easy">🟢 綠島夜市 (簡單 12×12)</option>
  <option value="normal">🟡 通化夜市 (普通 19×19)</option>
- <option value="hard">🔴 九份老街 (困難 19×19)</option>
+ <option value="hard">🔴 九份老街 (困難 12×19)</option>
  </select>
  </div>
  <div class="setting-item">
@@ -493,7 +494,7 @@
  const ctx = canvas.getContext('2d');
  const CELL_SIZE = 20;
  
- let ROWS = 19;
+ let ROWS = 12;
  let COLS = 19;
  
  const DIR = { STOP: 0, RIGHT: 1, LEFT: 2, UP: 3, DOWN: 4 };
@@ -540,32 +541,51 @@
  ctx.restore();
  }
 
- // 🌟 繪製灰色腳印圖形 (小能量球)
- function drawFootprint(ctx, cx, cy) {
+ // 🌟 經典台味「夜市烤肉串燒」像素圖 (小能量球)
+ function drawSkewer(ctx, cx, cy) {
  ctx.save();
- ctx.fillStyle = '#9e9e9e';
  ctx.translate(cx, cy);
- ctx.rotate(0.2);
+ ctx.rotate(0.35);
 
- ctx.beginPath();
- ctx.ellipse(0, 1.2, 2.4, 3.2, 0, 0, Math.PI * 2);
- ctx.fill();
-
- const toes = [
- { x: -2.0, y: -2.8, r: 0.9 },
- { x: -0.6, y: -3.8, r: 1.0 },
- { x: 0.8, y: -3.4, r: 0.9 },
- { x: 2.0, y: -2.2, r: 0.8 }
+ const sprite = [
+ '....S....', 
+ '...MMM...', 
+ '..MMRMM..', 
+ '...MMM...',
+ '....S....', 
+ '...YYY...', 
+ '..YYYYY..',
+ '...YYY...',
+ '....S....', 
+ '...GGG...', 
+ '..GWGGG..', 
+ '...GGG...',
+ '....S....', 
+ '....S....'
  ];
- toes.forEach(t => {
- ctx.beginPath();
- ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
- ctx.fill();
- });
+
+ const palette = {
+ 'S': '#d7a15c', 
+ 'M': '#c62828', 
+ 'R': '#ef5350', 
+ 'Y': '#ffb300', 
+ 'G': '#2e7d32', 
+ 'W': '#fffde7'  
+ };
+
+ const scale = 1.0;
+ const ox = - (9 * scale) / 2;
+ const oy = - (14 * scale) / 2;
+
+ drawPixelSprite(ctx, sprite, palette, scale, ox, oy);
  ctx.restore();
  }
 
- // 🌟 經典台味「茄芷袋」像素圖示 (對應地圖上的寶物)
+ function drawFootprint(ctx, cx, cy) {
+ drawSkewer(ctx, cx, cy);
+ }
+
+ // 🌟 經典台味「茄芷袋」像素圖示
  function drawKachiBag(cx, cy) {
  const timeOffset = Math.sin(Date.now() / 150) * 1.8;
  const drawY = cy + timeOffset - 1;
@@ -605,12 +625,10 @@
  ctx.restore();
  }
 
- // 別名安全防護：避免任何地方呼叫 drawDiverseSoup 造成崩潰
  function drawDiverseSoup(cx, cy, type) {
  drawKachiBag(cx, cy);
  }
 
- // 🌟 繪製老伯受驚時的冷汗水滴
  function drawSweatDrop(ctx, sx, sy) {
  ctx.save();
  ctx.fillStyle = '#05d9e8';
@@ -625,7 +643,6 @@
  ctx.restore();
  }
 
- // 預設 4 道題目
  const DEFAULT_QUIZ_BANK = [
  { 
  q: "湯的意思是", 
@@ -709,25 +726,19 @@
  [1,2,2,2,2,1,2,2,2,1,2,2,2,1,2,2,2,2,1],
  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
  ],
+ // 🌟 12×19 困難迷宮 (12 列 x 19 欄)
  hard: [
  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
- [1,2,2,2,1,2,2,2,2,1,2,2,2,2,1,2,2,2,1],
- [1,2,1,2,1,2,1,1,2,1,2,1,1,2,1,2,1,2,1],
- [1,2,1,2,2,2,2,1,2,2,2,1,2,2,2,2,1,2,1],
- [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
- [1,2,2,2,2,1,2,2,2,1,2,2,2,1,2,2,2,2,1],
- [1,1,1,2,1,1,1,1,0,0,0,1,1,1,1,2,1,1,1],
- [0,0,1,2,1,0,0,0,0,0,0,0,0,0,1,2,1,0,0],
- [1,1,1,2,1,0,1,1,0,0,0,1,1,0,1,2,1,1,1],
- [0,0,0,2,0,0,1,0,0,0,0,0,1,0,0,2,0,0,0],
- [1,1,1,2,1,0,1,1,1,1,1,1,1,0,1,2,1,1,1],
- [1,2,2,2,1,0,0,0,0,0,0,0,0,0,1,2,2,2,1],
- [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
  [1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,1],
- [1,2,1,2,1,1,1,1,2,1,2,1,1,1,1,2,1,2,1],
- [1,2,1,2,2,2,1,2,2,0,2,2,1,2,2,2,1,2,1],
- [1,2,1,1,1,2,1,2,1,1,1,2,1,2,1,1,1,2,1],
- [1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,1],
+ [1,2,1,1,2,1,1,1,2,1,2,1,1,1,2,1,1,2,1],
+ [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+ [1,2,1,1,2,1,0,0,0,0,0,0,0,1,2,1,1,2,1],
+ [0,2,1,1,2,1,0,0,0,0,0,0,0,1,2,1,1,2,0], // 橫向穿透傳送門 (tunnelRow: 5)
+ [1,2,2,2,2,1,0,0,0,0,0,0,0,1,2,2,2,2,1],
+ [1,2,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,2,1],
+ [1,2,2,1,2,2,2,2,2,1,2,2,2,2,2,1,2,2,1],
+ [1,1,2,1,2,1,1,1,2,1,2,1,1,1,2,1,2,1,1],
+ [1,2,2,2,2,2,2,2,2,0,2,2,2,2,2,2,2,2,1], // 玩家起點 (9, 10)
  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
  ]
  };
@@ -747,8 +758,7 @@
  preferredPoints: [
  { r: 1, c: 1 }, { r: 1, c: 10 },
  { r: 10, c: 1 }, { r: 10, c: 10 },
- { r: 4, c: 4 }, { r: 7, c: 7 },
- { r: 4, c: 7 }, { r: 7, c: 4 }
+ { r: 4, c: 4 }, { r: 7, c: 7 }
  ]
  },
  normal: {
@@ -765,28 +775,24 @@
  preferredPoints: [
  { r: 1, c: 1 }, { r: 1, c: 17 },
  { r: 14, c: 1 }, { r: 14, c: 17 },
- { r: 4, c: 9 }, { r: 13, c: 9 },
- { r: 4, c: 3 }, { r: 4, c: 15 },
- { r: 11, c: 3 }, { r: 11, c: 15 }
+ { r: 4, c: 9 }, { r: 13, c: 9 }
  ]
  },
  hard: {
- rows: 19,
+ rows: 12,
  cols: 19,
- tunnelRow: 9,
- playerStart: { x: 9, y: 15 },
+ tunnelRow: 5,
+ playerStart: { x: 9, y: 10 },
  ghostRoster: [
- { gx: 9, gy: 7, towel: '#ff3d00', id: 1 },
- { gx: 9, gy: 8, towel: '#00e676', id: 2 },
- { gx: 8, gy: 8, towel: '#ff9100', id: 3 },
- { gx: 10, gy: 8, towel: '#d500f9', id: 4 }
+ { gx: 9, gy: 5, towel: '#ff3d00', id: 1 },
+ { gx: 8, gy: 6, towel: '#00e676', id: 2 },
+ { gx: 9, gy: 6, towel: '#ff9100', id: 3 },
+ { gx: 10, gy: 6, towel: '#d500f9', id: 4 }
  ],
  preferredPoints: [
  { r: 1, c: 1 }, { r: 1, c: 17 },
- { r: 14, c: 1 }, { r: 14, c: 17 },
- { r: 4, c: 9 }, { r: 13, c: 9 },
- { r: 4, c: 3 }, { r: 4, c: 15 },
- { r: 11, c: 3 }, { r: 11, c: 15 }
+ { r: 10, c: 1 }, { r: 10, c: 17 },
+ { r: 3, c: 9 }, { r: 8, c: 4 }
  ]
  }
  };
@@ -821,7 +827,7 @@
  } catch (e) {}
  return {
  quizBank: (q && q.length > 0) ? q : JSON.parse(JSON.stringify(DEFAULT_QUIZ_BANK)),
- mapType: safeGetStorage(STORAGE_KEY_MAP, 'easy'),
+ mapType: safeGetStorage(STORAGE_KEY_MAP, 'hard'),
  ghostCount: parseInt(safeGetStorage(STORAGE_KEY_GHOSTS, '2'), 10) || 2
  };
  }
@@ -863,12 +869,42 @@
  reader.readAsDataURL(file);
  }
 
+ /* 🌟 全螢幕動態等比縮放：完全解除 600px 與正方形限制 */
+ function updateContainerLayout() {
+ const container = document.getElementById('game-container');
+ const hud = document.getElementById('hud');
+ if (!container || !hud) return;
+
+ const maxW = window.innerWidth * 0.95;
+ const maxH = window.innerHeight - 85; // 扣除上方 HUD 與空間間距
+
+ const mapAspect = (COLS * CELL_SIZE) / (ROWS * CELL_SIZE); // 寬高比例
+ 
+ let w = maxW;
+ let h = w / mapAspect;
+
+ if (h > maxH) {
+ h = maxH;
+ w = h * mapAspect;
+ }
+
+ const finalW = Math.floor(w);
+ const finalH = Math.floor(h);
+
+ container.style.width = `${finalW}px`;
+ container.style.height = `${finalH}px`;
+ hud.style.width = `${finalW}px`;
+ }
+ window.addEventListener('resize', updateContainerLayout);
+
  function buildDynamicMap() {
  const cfg = MAP_CONFIGS[selectedMapType] || MAP_CONFIGS.normal;
  ROWS = cfg.rows;
  COLS = cfg.cols;
  canvas.width = COLS * CELL_SIZE;
  canvas.height = ROWS * CELL_SIZE;
+
+ updateContainerLayout();
 
  const template = MAP_TEMPLATES[selectedMapType] || MAP_TEMPLATES.normal;
  let newMap = template.map(row => [...row]);
@@ -1074,7 +1110,7 @@
  if (tile === 1) {
  drawTentRoofWall(x, y);
  } else if (tile === 2) {
- drawFootprint(ctx, x + CELL_SIZE/2, y + CELL_SIZE/2);
+ drawSkewer(ctx, x + CELL_SIZE/2, y + CELL_SIZE/2);
  } else if (tile === 3) {
  drawKachiBag(x + CELL_SIZE/2, y + CELL_SIZE/2);
  }
@@ -1377,7 +1413,7 @@
  }
  }
 
- let player = new Player(5, 10);
+ let player = new Player(9, 10);
  let ghosts = [];
 
  function initGhostTeam() {
@@ -1518,8 +1554,8 @@
  safeSetStorage(STORAGE_KEY_MAP, selectedMapType);
  safeSetStorage(STORAGE_KEY_GHOSTS, ghostCount.toString());
 
- const mapDesc = selectedMapType === 'easy' ? '簡單 12×12' : selectedMapType === 'hard' ? '困難 19×19' : '普通 19×19';
- alert(`設定已成功儲存！\n地圖：${mapDesc}\n老闆：${ghostCount} 位\n茄芷袋：共 ${quizBank.length} 個(對應 ${quizBank.length} 道題目)`);
+ const mapDesc = selectedMapType === 'easy' ? '簡單 12×12' : selectedMapType === 'hard' ? '困難 12×19' : '普通 19×19';
+ alert(`設定已成功儲存！\n地圖：${mapDesc}\n老闆：${ghostCount} 位\n茄芷袋：共 ${quizBank.length} 個`);
  
  map = buildDynamicMap();
  initGhostTeam();
@@ -1533,7 +1569,7 @@
  bindClick('btn-reset-default', () => {
  if (confirm("確定要恢復預設指定的 4 道題目設定嗎？")) {
  editingQuizBank = JSON.parse(JSON.stringify(DEFAULT_QUIZ_BANK));
- selectMap.value = 'easy';
+ selectMap.value = 'hard';
  selectGhosts.value = 2;
  renderEditor();
  }
