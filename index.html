@@ -90,6 +90,36 @@
  pointer-events: none !important;
  }
 
+ /* 倒數計時半透明遮罩 */
+ #countdown-overlay {
+ position: absolute;
+ top: 0; left: 0; width: 100%; height: 100%;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ background: rgba(0, 0, 0, 0.28) !important;
+ z-index: 25;
+ pointer-events: none;
+ backdrop-filter: blur(1.5px);
+ }
+
+ #countdown-text {
+ font-size: clamp(54px, 16vmin, 108px);
+ font-weight: 900;
+ color: var(--neon-yellow);
+ text-shadow: 0 0 18px currentColor, 0 0 35px currentColor;
+ letter-spacing: 3px;
+ user-select: none;
+ -webkit-user-select: none;
+ }
+
+ @keyframes countZoom {
+ 0% { transform: scale(1.6); opacity: 0; }
+ 25% { transform: scale(1.0); opacity: 1; }
+ 80% { transform: scale(0.96); opacity: 1; }
+ 100% { transform: scale(0.85); opacity: 0; }
+ }
+
  /* 介面彈窗遮罩 */
  .modal {
  position: absolute;
@@ -378,6 +408,11 @@
  <div id="game-container">
  <canvas id="gameCanvas"></canvas>
 
+ <!-- 倒數計時遮罩 (3, 2, 1, 出發！) -->
+ <div id="countdown-overlay" class="hidden">
+ <div id="countdown-text">3</div>
+ </div>
+
  <!-- 1. 開場主畫面 -->
  <div id="start-screen" class="modal">
  <h1>夜市吃貨小精靈</h1>
@@ -505,6 +540,7 @@
  let playerName = "";
  let animationId = null;
  let quizTimer = null;
+ let countdownTimer = null;
  let frameCount = 0;
  let powerModeTime = 0;
 
@@ -726,19 +762,18 @@
  [1,2,2,2,2,1,2,2,2,1,2,2,2,1,2,2,2,2,1],
  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
  ],
- // 🌟 12×19 困難迷宮 (12 列 x 19 欄)
  hard: [
  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
  [1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,1],
  [1,2,1,1,2,1,1,1,2,1,2,1,1,1,2,1,1,2,1],
  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
  [1,2,1,1,2,1,0,0,0,0,0,0,0,1,2,1,1,2,1],
- [0,2,1,1,2,1,0,0,0,0,0,0,0,1,2,1,1,2,0], // 橫向穿透傳送門 (tunnelRow: 5)
+ [0,2,1,1,2,1,0,0,0,0,0,0,0,1,2,1,1,2,0],
  [1,2,2,2,2,1,0,0,0,0,0,0,0,1,2,2,2,2,1],
  [1,2,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,2,1],
  [1,2,2,1,2,2,2,2,2,1,2,2,2,2,2,1,2,2,1],
  [1,1,2,1,2,1,1,1,2,1,2,1,1,1,2,1,2,1,1],
- [1,2,2,2,2,2,2,2,2,0,2,2,2,2,2,2,2,2,1], // 玩家起點 (9, 10)
+ [1,2,2,2,2,2,2,2,2,0,2,2,2,2,2,2,2,2,1],
  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
  ]
  };
@@ -869,16 +904,15 @@
  reader.readAsDataURL(file);
  }
 
- /* 🌟 全螢幕動態等比縮放：完全解除 600px 與正方形限制 */
  function updateContainerLayout() {
  const container = document.getElementById('game-container');
  const hud = document.getElementById('hud');
  if (!container || !hud) return;
 
  const maxW = window.innerWidth * 0.95;
- const maxH = window.innerHeight - 85; // 扣除上方 HUD 與空間間距
+ const maxH = window.innerHeight - 85;
 
- const mapAspect = (COLS * CELL_SIZE) / (ROWS * CELL_SIZE); // 寬高比例
+ const mapAspect = (COLS * CELL_SIZE) / (ROWS * CELL_SIZE);
  
  let w = maxW;
  let h = w / mapAspect;
@@ -895,7 +929,14 @@
  container.style.height = `${finalH}px`;
  hud.style.width = `${finalW}px`;
  }
- window.addEventListener('resize', updateContainerLayout);
+ window.addEventListener('resize', () => {
+ updateContainerLayout();
+ if (gameState !== 'PLAY') {
+ drawMap();
+ player.draw();
+ ghosts.forEach(g => g.draw());
+ }
+ });
 
  function buildDynamicMap() {
  const cfg = MAP_CONFIGS[selectedMapType] || MAP_CONFIGS.normal;
@@ -1046,6 +1087,19 @@
  gain.gain.setValueAtTime(0.08, now);
  gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
  osc.start(now); osc.stop(now + 0.08);
+ } else if (type === 'beep') {
+ osc.type = 'sine';
+ osc.frequency.setValueAtTime(587.33, now);
+ gain.gain.setValueAtTime(0.12, now);
+ gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+ osc.start(now); osc.stop(now + 0.18);
+ } else if (type === 'start') {
+ osc.type = 'triangle';
+ osc.frequency.setValueAtTime(587.33, now);
+ osc.frequency.exponentialRampToValueAtTime(1174.66, now + 0.25);
+ gain.gain.setValueAtTime(0.18, now);
+ gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+ osc.start(now); osc.stop(now + 0.3);
  } else if (type === 'power') {
  osc.type = 'triangle';
  osc.frequency.setValueAtTime(320, now);
@@ -1434,6 +1488,64 @@
  ghosts.forEach(g => g.reset());
  }
 
+ // ================= 倒數 3 秒系統 =================
+ function runCountdown(onComplete) {
+ if (countdownTimer) {
+ clearTimeout(countdownTimer);
+ countdownTimer = null;
+ }
+
+ gameState = 'COUNTDOWN';
+ const overlay = document.getElementById('countdown-overlay');
+ const textEl = document.getElementById('countdown-text');
+ overlay.classList.remove('hidden');
+
+ drawMap();
+ player.draw();
+ ghosts.forEach(g => g.draw());
+
+ let count = 3;
+
+ function step() {
+ if (gameState !== 'COUNTDOWN') return;
+
+ drawMap();
+ player.draw();
+ ghosts.forEach(g => g.draw());
+
+ if (count > 0) {
+ textEl.innerText = count;
+ textEl.style.color = count === 1 ? 'var(--neon-pink)' : (count === 2 ? 'var(--neon-yellow)' : 'var(--neon-blue)');
+ 
+ textEl.style.animation = 'none';
+ void textEl.offsetWidth; 
+ textEl.style.animation = 'countZoom 0.95s cubic-bezier(0.25, 1, 0.5, 1) forwards';
+
+ playSound('beep');
+ count--;
+ countdownTimer = setTimeout(step, 1000);
+ } else if (count === 0) {
+ textEl.innerText = "出發！";
+ textEl.style.color = "var(--neon-green)";
+ 
+ textEl.style.animation = 'none';
+ void textEl.offsetWidth;
+ textEl.style.animation = 'countZoom 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards';
+
+ playSound('start');
+ count--;
+ countdownTimer = setTimeout(() => {
+ overlay.classList.add('hidden');
+ if (gameState === 'COUNTDOWN') {
+ onComplete();
+ }
+ }, 800);
+ }
+ }
+
+ step();
+ }
+
  function bindClick(elementId, callback) {
  const el = document.getElementById(elementId);
  if (!el) return;
@@ -1448,7 +1560,7 @@
  }
 
  window.addEventListener('keydown', (e) => {
- if (gameState !== 'PLAY') return;
+ if (gameState !== 'PLAY' && gameState !== 'COUNTDOWN') return;
  switch(e.key) {
  case 'ArrowUp': case 'w': case 'W': player.nextDir = DIR.UP; break;
  case 'ArrowDown': case 's': case 'S': player.nextDir = DIR.DOWN; break;
@@ -1466,7 +1578,7 @@
  }, { passive: true });
 
  window.addEventListener('touchend', e => {
- if (gameState !== 'PLAY' || !e.changedTouches || e.changedTouches.length === 0) return;
+ if ((gameState !== 'PLAY' && gameState !== 'COUNTDOWN') || !e.changedTouches || e.changedTouches.length === 0) return;
  let dx = e.changedTouches[0].clientX - touchStartX;
  let dy = e.changedTouches[0].clientY - touchStartY;
  if (Math.abs(dx) > Math.abs(dy)) {
@@ -1492,6 +1604,11 @@
  });
 
  bindClick('menu-btn', () => {
+ if (countdownTimer) {
+ clearTimeout(countdownTimer);
+ countdownTimer = null;
+ }
+ document.getElementById('countdown-overlay').classList.add('hidden');
  document.getElementById('game-over-screen').classList.add('hidden');
  document.getElementById('start-screen').classList.remove('hidden');
  gameState = 'START';
@@ -1511,9 +1628,16 @@
  resetAllPositions();
  powerModeTime = 0;
  updateHUD();
- gameState = 'PLAY';
+ 
+ drawMap();
+ player.draw();
+ ghosts.forEach(g => g.draw());
+ 
  cancelAnimationFrame(animationId);
+ runCountdown(() => {
+ gameState = 'PLAY';
  gameLoop();
+ });
  }
 
  function updateHUD() {
@@ -1898,9 +2022,14 @@
  if (lives > 0) {
  setTimeout(() => {
  resetAllPositions();
+ drawMap();
+ player.draw();
+ ghosts.forEach(g => g.draw());
+ runCountdown(() => {
  gameState = 'PLAY';
  gameLoop();
- }, 1200);
+ });
+ }, 800);
  } else {
  gameState = 'GAMEOVER';
  setTimeout(() => {
