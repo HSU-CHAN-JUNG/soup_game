@@ -50,6 +50,10 @@
  max-width: 96vw;
  display: flex;
  justify-content: space-between;
+<<<<<<< HEAD
+=======
+ align-items: center;
+>>>>>>> 9a8a548 (Revert "Add files via upload")
  padding: clamp(6px, 1.2vh, 12px) clamp(14px, 2vw, 24px);
  background: rgba(0,0,0,0.9) !important;
  border: 2px solid var(--neon-blue);
@@ -90,7 +94,11 @@
  pointer-events: none !important;
  }
 
+<<<<<<< HEAD
  /* 倒數計時半透明遮罩 */
+=======
+ /* 倒數計時遮罩 */
+>>>>>>> 9a8a548 (Revert "Add files via upload")
  #countdown-overlay {
  position: absolute;
  top: 0; left: 0; width: 100%; height: 100%;
@@ -403,6 +411,9 @@
  <div class="hud-item">👤 <span id="display-name">玩家</span></div>
  <div class="hud-item">🏆 分數: <span id="score">0</span></div>
  <div class="hud-item" id="lives">❤️❤️❤️</div>
+ <div class="hud-item">
+   <button id="music-toggle-btn" class="btn" type="button" style="padding: 3px 10px; font-size: clamp(12px, 1.8vmin, 15px); margin: 0; border-radius: 12px;">🎵 音樂: 開</button>
+ </div>
  </div>
 
  <div id="game-container">
@@ -525,6 +536,35 @@
  </div>
 
  <script>
+ // ================= 🎵 背景音樂設定區 =================
+ // ⭐⭐⭐ 請在這裡修改你的音樂路徑 ⭐⭐⭐
+ // 範例 1（music 資料夾內的 bgm.mp3）："music/bgm.mp3"
+ // 範例 2（同層目錄的音檔）："bgm.mp3"
+ // 範例 3（線上音檔 URL）："https://example.com/music.mp3"
+ const BGM_URL = "\\music\\emmraan-funny-punk-rock-203366.mp3";
+
+ const bgm = new Audio(BGM_URL);
+ bgm.loop = true;
+ bgm.volume = 0.35; // 預設背景音量（0.0 ~ 1.0）
+ let isMusicMuted = false;
+
+ function playBGM() {
+   if (isMusicMuted || !BGM_URL) return;
+   bgm.play().catch(() => {});
+ }
+
+ function pauseBGM() {
+   bgm.pause();
+ }
+
+ function lowerBGM() {
+   if (!isMusicMuted) bgm.volume = 0.15;
+ }
+
+ function restoreBGM() {
+   if (!isMusicMuted) bgm.volume = 0.35;
+ }
+
  const canvas = document.getElementById('gameCanvas');
  const ctx = canvas.getContext('2d');
  const CELL_SIZE = 20;
@@ -1559,6 +1599,25 @@
  el.addEventListener('click', handler);
  }
 
+ // 音樂靜音開關
+ bindClick('music-toggle-btn', () => {
+   isMusicMuted = !isMusicMuted;
+   const btn = document.getElementById('music-toggle-btn');
+   if (isMusicMuted) {
+     pauseBGM();
+     btn.innerText = "🔇 音樂: 關";
+     btn.style.color = "#aaaaaa";
+     btn.style.borderColor = "#666666";
+   } else {
+     btn.innerText = "🎵 音樂: 開";
+     btn.style.color = "var(--neon-blue)";
+     btn.style.borderColor = "var(--neon-blue)";
+     if (gameState === 'PLAY' || gameState === 'COUNTDOWN') {
+       playBGM();
+     }
+   }
+ });
+
  window.addEventListener('keydown', (e) => {
  if (gameState !== 'PLAY' && gameState !== 'COUNTDOWN') return;
  switch(e.key) {
@@ -1608,6 +1667,10 @@
  clearTimeout(countdownTimer);
  countdownTimer = null;
  }
+<<<<<<< HEAD
+=======
+ pauseBGM();
+>>>>>>> 9a8a548 (Revert "Add files via upload")
  document.getElementById('countdown-overlay').classList.add('hidden');
  document.getElementById('game-over-screen').classList.add('hidden');
  document.getElementById('start-screen').classList.remove('hidden');
@@ -1633,6 +1696,10 @@
  player.draw();
  ghosts.forEach(g => g.draw());
  
+<<<<<<< HEAD
+=======
+ playBGM(); // 啟動背景音樂
+>>>>>>> 9a8a548 (Revert "Add files via upload")
  cancelAnimationFrame(animationId);
  runCountdown(() => {
  gameState = 'PLAY';
@@ -1862,6 +1929,7 @@
  if (gameState === 'QUIZ') return;
  gameState = 'QUIZ';
  playSound('power');
+ lowerBGM(); // 問答時音樂自動減弱，凸顯答題氛圍
  
  if (quizTimer) clearTimeout(quizTimer);
 
@@ -1962,6 +2030,7 @@
  quizTimer = null;
  }
  document.getElementById('quiz-screen').classList.add('hidden');
+ restoreBGM(); // 恢復正常遊戲音樂音量
 
  if (checkWin()) {
  return;
@@ -2032,6 +2101,7 @@
  }, 800);
  } else {
  gameState = 'GAMEOVER';
+ pauseBGM(); // 遊戲結束時暫停音樂
  setTimeout(() => {
  document.getElementById('end-title').innerText = "Game Over";
  document.getElementById('end-message').innerText = "肚子撐破啦！被熱情老伯抓到了！";
@@ -2057,6 +2127,7 @@
  }
  if (!hasFood) {
  gameState = 'VICTORY';
+ pauseBGM();
  document.getElementById('end-title').innerText = "通關大吉！";
  document.getElementById('end-title').style.color = "var(--neon-blue)";
  document.getElementById('end-message').innerText = "太厲害了！你搜集了整座夜市的美食與茄芷袋！";
