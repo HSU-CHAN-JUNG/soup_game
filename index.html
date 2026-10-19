@@ -50,10 +50,7 @@
  max-width: 96vw;
  display: flex;
  justify-content: space-between;
-<<<<<<< HEAD
-=======
  align-items: center;
->>>>>>> 9a8a548 (Revert "Add files via upload")
  padding: clamp(6px, 1.2vh, 12px) clamp(14px, 2vw, 24px);
  background: rgba(0,0,0,0.9) !important;
  border: 2px solid var(--neon-blue);
@@ -68,7 +65,7 @@
  .hud-item { display: flex; align-items: center; }
  #lives { color: var(--neon-pink); letter-spacing: 2px; }
 
- /* 遊戲畫布容器：由 JS 依地圖比例動態設為最大尺寸 */
+ /* 遊戲畫布容器 */
  #game-container {
  position: relative;
  box-shadow: 0 0 25px var(--neon-pink);
@@ -94,11 +91,7 @@
  pointer-events: none !important;
  }
 
-<<<<<<< HEAD
- /* 倒數計時半透明遮罩 */
-=======
  /* 倒數計時遮罩 */
->>>>>>> 9a8a548 (Revert "Add files via upload")
  #countdown-overlay {
  position: absolute;
  top: 0; left: 0; width: 100%; height: 100%;
@@ -541,7 +534,7 @@
  // 範例 1（music 資料夾內的 bgm.mp3）："music/bgm.mp3"
  // 範例 2（同層目錄的音檔）："bgm.mp3"
  // 範例 3（線上音檔 URL）："https://example.com/music.mp3"
- const BGM_URL = "\\music\\emmraan-funny-punk-rock-203366.mp3";
+ const BGM_URL = "music\\emmraan-funny-punk-rock-203366.mp3";
 
  const bgm = new Audio(BGM_URL);
  bgm.loop = true;
@@ -1667,10 +1660,7 @@
  clearTimeout(countdownTimer);
  countdownTimer = null;
  }
-<<<<<<< HEAD
-=======
  pauseBGM();
->>>>>>> 9a8a548 (Revert "Add files via upload")
  document.getElementById('countdown-overlay').classList.add('hidden');
  document.getElementById('game-over-screen').classList.add('hidden');
  document.getElementById('start-screen').classList.remove('hidden');
@@ -1696,10 +1686,7 @@
  player.draw();
  ghosts.forEach(g => g.draw());
  
-<<<<<<< HEAD
-=======
  playBGM(); // 啟動背景音樂
->>>>>>> 9a8a548 (Revert "Add files via upload")
  cancelAnimationFrame(animationId);
  runCountdown(() => {
  gameState = 'PLAY';
